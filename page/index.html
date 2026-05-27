@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Fubacam is a private Discord match tracker for the Fubalicious Valorant team."
+    />
+    <title>Fubacam | Private Valorant Match Tracker</title>
+    <link rel="icon" href="./assets/fubacam-mark.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Fubacam home">
+        <img src="./assets/fubacam-mark.png" alt="" />
+        <span>Fubacam</span>
+      </a>
+      <nav>
+        <a href="#privacy">Privacy</a>
+        <a href="#integration">Riot Integration</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <img
+          class="hero-mark"
+          src="./assets/fubacam-mark.png"
+          alt="Fubacam mascot mark"
+        />
+        <div class="hero-copy">
+          <p class="eyebrow">Private Discord tool for Fubalicious</p>
+          <h1>Fubacam</h1>
+          <p class="lede">
+            A private, non-commercial Valorant match tracker built for the
+            Fubalicious team. Players opt in with Riot Sign On, and match
+            summaries stay inside our Discord server.
+          </p>
+          <div class="hero-actions" aria-label="Product facts">
+            <span>Private use</span>
+            <span>Opt-in only</span>
+            <span>No scraping</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="intro-section" aria-label="Product overview">
+        <div class="section-inner intro-grid">
+          <article>
+            <span class="kicker">What it does</span>
+            <h2>Team match history without public exposure.</h2>
+            <p>
+              Fubacam helps the Fubalicious Valorant team keep a shared record
+              of recent matches, post Discord summaries, and generate
+              lightweight internal rankings for registered members.
+            </p>
+          </article>
+          <div class="summary-panel" aria-label="Fubacam summary">
+            <div>
+              <strong>FBL</strong>
+              <span>Private Discord server</span>
+            </div>
+            <div>
+              <strong>RSO</strong>
+              <span>Riot Sign On authorization</span>
+            </div>
+            <div>
+              <strong>VAL</strong>
+              <span>Valorant match summaries</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band" id="privacy">
+        <div class="section-inner two-column">
+          <div>
+            <span class="kicker">Privacy</span>
+            <h2>Only opted-in players are tracked.</h2>
+          </div>
+          <div class="copy-stack">
+            <p>
+              Fubacam does not collect Riot passwords and does not ask players
+              to share login credentials. Players link their account through
+              Riot Sign On and can remove their Discord registration.
+            </p>
+            <p>
+              Stored data is limited to Discord IDs, Riot display information,
+              Riot PUUIDs, match summaries, and Discord channel settings needed
+              for the bot to work.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band alt" id="integration">
+        <div class="section-inner two-column">
+          <div>
+            <span class="kicker">Integration</span>
+            <h2>Built for official Riot account authorization.</h2>
+          </div>
+          <div class="copy-stack">
+            <p>
+              The intended production flow uses Riot Sign On and the official
+              Riot Games API. After a player authorizes access, Fubacam stores
+              the player's PUUID and checks recent Valorant matches through the
+              active match provider.
+            </p>
+            <p>
+              The bot is not a public SaaS product, is not monetized, and does
+              not scrape Riot, Tracker Network, or third-party websites.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="commands-section" aria-label="Discord commands">
+        <div class="section-inner">
+          <span class="kicker">Discord commands</span>
+          <h2>Simple commands for a small team.</h2>
+          <div class="commands-grid">
+            <span>/link-riot</span>
+            <span>/players</span>
+            <span>/lastmatch</span>
+            <span>/ranking</span>
+            <span>/set-channel</span>
+            <span>/tracking-status</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" id="contact">
+      <div>
+        <strong>Fubacam</strong>
+        <span
+          >Private Discord match tracker for the Fubalicious Valorant
+          team.</span
+        >
+      </div>
+      <span>Contact: raulcabralc@gmail.com</span>
+    </footer>
+  </body>
+</html>
