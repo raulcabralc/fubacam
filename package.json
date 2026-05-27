@@ -1,0 +1,26 @@
+{
+  "name": "fubacam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private Discord match tracker for Fubalicious Valorant.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.5.0",
+    "mongoose": "^8.15.1",
+    "node-cron": "^3.0.3",
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.24",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
