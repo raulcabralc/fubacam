@@ -84,17 +84,19 @@ export class RiotMatchProvider implements MatchProvider {
 
     const team = match.teams?.find((item) => item.teamId === participant.teamId);
     const enemy = match.teams?.find((item) => item.teamId !== participant.teamId);
+    const roundStats = deriveRoundStats(match, participant.puuid);
+    const abilityCasts = participant.stats?.abilityCasts;
 
     return {
       provider: this.getName(),
-      providerMatchId: match.metadata.matchId,
-      startedAt: new Date(match.metadata.gameStartMillis ?? Date.now()),
-      map: normalizeRiotAssetId(match.metadata.mapId),
-      mode: normalizeRiotAssetId(match.metadata.gameMode),
-      queue: match.metadata.gameMode,
+      providerMatchId: match.matchInfo.matchId,
+      startedAt: new Date(match.matchInfo.gameStartMillis ?? Date.now()),
+      map: normalizeRiotAssetId(match.matchInfo.mapId),
+      mode: normalizeRiotAssetId(match.matchInfo.gameMode),
+      queue: match.matchInfo.queueId,
       teamScore: team?.roundsWon,
       enemyScore: enemy?.roundsWon,
-      durationSeconds: match.metadata.gameLengthMillis ? Math.round(match.metadata.gameLengthMillis / 1000) : undefined,
+      durationSeconds: match.matchInfo.gameLengthMillis ? Math.round(match.matchInfo.gameLengthMillis / 1000) : undefined,
       playerStats: {
         riotName: participant.gameName ?? player.riotName,
         tagLine: participant.tagLine ?? player.tagLine,
@@ -103,12 +105,111 @@ export class RiotMatchProvider implements MatchProvider {
         deaths: participant.stats?.deaths,
         assists: participant.stats?.assists,
         score: participant.stats?.score,
-        won: team?.won
+        combatScore:
+          participant.stats?.score && participant.stats.roundsPlayed
+            ? Math.round(participant.stats.score / participant.stats.roundsPlayed)
+            : undefined,
+        won: team?.won,
+        roundsPlayed: participant.stats?.roundsPlayed ?? team?.roundsPlayed,
+        playtimeMillis: participant.stats?.playtimeMillis,
+        firstBloods: roundStats.firstBloods,
+        firstDeaths: roundStats.firstDeaths,
+        totalDamage: roundStats.totalDamage,
+        headshots: roundStats.headshots,
+        bodyshots: roundStats.bodyshots,
+        legshots: roundStats.legshots,
+        headshotPercent: roundStats.headshotPercent,
+        bodyshotPercent: roundStats.bodyshotPercent,
+        legshotPercent: roundStats.legshotPercent,
+        plants: roundStats.plants,
+        defuses: roundStats.defuses,
+        avgLoadoutValue: roundStats.avgLoadoutValue,
+        totalSpent: roundStats.totalSpent,
+        totalRemaining: roundStats.totalRemaining,
+        grenadeCasts: abilityCasts?.grenadeCasts,
+        ability1Casts: abilityCasts?.ability1Casts,
+        ability2Casts: abilityCasts?.ability2Casts,
+        ultimateCasts: abilityCasts?.ultimateCasts,
+        multiKills: roundStats.multiKills,
+        aces: roundStats.aces,
+        maxKillsInRound: roundStats.maxKillsInRound
       },
       raw: match
     };
   }
 }
+
+const deriveRoundStats = (match: RiotMatchPayload, puuid: string) => {
+  let firstBloods = 0;
+  let firstDeaths = 0;
+  let totalDamage = 0;
+  let headshots = 0;
+  let bodyshots = 0;
+  let legshots = 0;
+  let plants = 0;
+  let defuses = 0;
+  let totalLoadoutValue = 0;
+  let economyRounds = 0;
+  let totalSpent = 0;
+  let totalRemaining = 0;
+  let multiKills = 0;
+  let aces = 0;
+  let maxKillsInRound = 0;
+
+  for (const round of match.roundResults) {
+    if (round.bombPlanter === puuid) plants += 1;
+    if (round.bombDefuser === puuid) defuses += 1;
+
+    const firstKill = round.playerStats
+      .flatMap((roundPlayer) => roundPlayer.kills)
+      .sort((left, right) => left.timeSinceRoundStartMillis - right.timeSinceRoundStartMillis)[0];
+
+    if (firstKill?.killer === puuid) firstBloods += 1;
+    if (firstKill?.victim === puuid) firstDeaths += 1;
+
+    const playerRound = round.playerStats.find((item) => item.puuid === puuid);
+    if (!playerRound) continue;
+
+    const roundKills = playerRound.kills.length;
+    maxKillsInRound = Math.max(maxKillsInRound, roundKills);
+    if (roundKills >= 2) multiKills += 1;
+    if (roundKills >= 5) aces += 1;
+
+    totalLoadoutValue += playerRound.economy.loadoutValue;
+    totalSpent += playerRound.economy.spent;
+    totalRemaining += playerRound.economy.remaining;
+    economyRounds += 1;
+
+    for (const damage of playerRound.damage) {
+      totalDamage += damage.damage;
+      headshots += damage.headshots;
+      bodyshots += damage.bodyshots;
+      legshots += damage.legshots;
+    }
+  }
+
+  const totalShots = headshots + bodyshots + legshots;
+
+  return {
+    firstBloods,
+    firstDeaths,
+    totalDamage,
+    headshots,
+    bodyshots,
+    legshots,
+    headshotPercent: totalShots > 0 ? Math.round((headshots / totalShots) * 100) : 0,
+    bodyshotPercent: totalShots > 0 ? Math.round((bodyshots / totalShots) * 100) : 0,
+    legshotPercent: totalShots > 0 ? Math.round((legshots / totalShots) * 100) : 0,
+    plants,
+    defuses,
+    avgLoadoutValue: economyRounds > 0 ? Math.round(totalLoadoutValue / economyRounds) : 0,
+    totalSpent,
+    totalRemaining,
+    multiKills,
+    aces,
+    maxKillsInRound
+  };
+};
 
 const normalizeRiotAssetId = (value?: string) => {
   if (!value) return undefined;

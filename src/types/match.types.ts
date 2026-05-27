@@ -29,6 +29,27 @@ export type ProviderMatchPlayerStats = {
   won?: boolean;
   firstBloods?: number;
   firstDeaths?: number;
+  roundsPlayed?: number;
+  playtimeMillis?: number;
+  totalDamage?: number;
+  headshots?: number;
+  bodyshots?: number;
+  legshots?: number;
+  headshotPercent?: number;
+  bodyshotPercent?: number;
+  legshotPercent?: number;
+  plants?: number;
+  defuses?: number;
+  avgLoadoutValue?: number;
+  totalSpent?: number;
+  totalRemaining?: number;
+  grenadeCasts?: number;
+  ability1Casts?: number;
+  ability2Casts?: number;
+  ultimateCasts?: number;
+  multiKills?: number;
+  aces?: number;
+  maxKillsInRound?: number;
 };
 
 export type ProviderMatch = {

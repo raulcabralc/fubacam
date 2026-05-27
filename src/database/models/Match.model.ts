@@ -23,6 +23,27 @@ export type MatchDocument = {
   won?: boolean;
   firstBloods?: number;
   firstDeaths?: number;
+  roundsPlayed?: number;
+  playtimeMillis?: number;
+  totalDamage?: number;
+  headshots?: number;
+  bodyshots?: number;
+  legshots?: number;
+  headshotPercent?: number;
+  bodyshotPercent?: number;
+  legshotPercent?: number;
+  plants?: number;
+  defuses?: number;
+  avgLoadoutValue?: number;
+  totalSpent?: number;
+  totalRemaining?: number;
+  grenadeCasts?: number;
+  ability1Casts?: number;
+  ability2Casts?: number;
+  ultimateCasts?: number;
+  multiKills?: number;
+  aces?: number;
+  maxKillsInRound?: number;
   raw?: unknown;
   postedAt?: Date;
   createdAt: Date;
@@ -53,6 +74,27 @@ const MatchSchema = new Schema<MatchDocument>(
     won: { type: Boolean },
     firstBloods: { type: Number },
     firstDeaths: { type: Number },
+    roundsPlayed: { type: Number },
+    playtimeMillis: { type: Number },
+    totalDamage: { type: Number },
+    headshots: { type: Number },
+    bodyshots: { type: Number },
+    legshots: { type: Number },
+    headshotPercent: { type: Number },
+    bodyshotPercent: { type: Number },
+    legshotPercent: { type: Number },
+    plants: { type: Number },
+    defuses: { type: Number },
+    avgLoadoutValue: { type: Number },
+    totalSpent: { type: Number },
+    totalRemaining: { type: Number },
+    grenadeCasts: { type: Number },
+    ability1Casts: { type: Number },
+    ability2Casts: { type: Number },
+    ultimateCasts: { type: Number },
+    multiKills: { type: Number },
+    aces: { type: Number },
+    maxKillsInRound: { type: Number },
     raw: { type: Schema.Types.Mixed },
     postedAt: { type: Date }
   },

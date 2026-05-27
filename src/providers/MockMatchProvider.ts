@@ -23,6 +23,11 @@ export class MockMatchProvider implements MatchProvider {
     const kills = randomBetween(8, 28);
     const deaths = randomBetween(6, 22);
     const assists = randomBetween(1, 14);
+    const roundsPlayed = won ? 13 + randomBetween(4, 11) : 13 + randomBetween(4, 11);
+    const headshots = randomBetween(2, 28);
+    const bodyshots = randomBetween(18, 70);
+    const legshots = randomBetween(0, 14);
+    const totalShots = headshots + bodyshots + legshots;
 
     return {
       provider: this.getName(),
@@ -45,7 +50,28 @@ export class MockMatchProvider implements MatchProvider {
         combatScore: randomBetween(120, 360),
         won,
         firstBloods: randomBetween(0, 4),
-        firstDeaths: randomBetween(0, 3)
+        firstDeaths: randomBetween(0, 3),
+        roundsPlayed,
+        playtimeMillis: randomBetween(1800, 3100) * 1000,
+        totalDamage: randomBetween(900, 5200),
+        headshots,
+        bodyshots,
+        legshots,
+        headshotPercent: Math.round((headshots / totalShots) * 100),
+        bodyshotPercent: Math.round((bodyshots / totalShots) * 100),
+        legshotPercent: Math.round((legshots / totalShots) * 100),
+        plants: randomBetween(0, 3),
+        defuses: randomBetween(0, 2),
+        avgLoadoutValue: randomBetween(1800, 5200),
+        totalSpent: randomBetween(24000, 72000),
+        totalRemaining: randomBetween(0, 18000),
+        grenadeCasts: randomBetween(0, 12),
+        ability1Casts: randomBetween(0, 18),
+        ability2Casts: randomBetween(0, 18),
+        ultimateCasts: randomBetween(0, 4),
+        multiKills: randomBetween(0, 6),
+        aces: Math.random() > 0.94 ? 1 : 0,
+        maxKillsInRound: randomBetween(1, 5)
       },
       raw: { generated: true }
     };

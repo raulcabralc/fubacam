@@ -1,10 +1,37 @@
 export type MatchSpecialEventStats = {
   firstBloods: number;
   firstDeaths: number;
+  combatScore: number;
   acs: number;
   kills: number;
   deaths: number;
+  assists: number;
+  roundsPlayed: number;
   rounds: number;
+  teamScore?: number;
+  enemyScore?: number;
+  won?: boolean;
+  playtimeMillis: number;
+  totalDamage: number;
+  headshots: number;
+  bodyshots: number;
+  legshots: number;
+  headshotPercent: number;
+  bodyshotPercent: number;
+  legshotPercent: number;
+  plants: number;
+  defuses: number;
+  avgLoadoutValue: number;
+  totalSpent: number;
+  totalRemaining: number;
+  grenadeCasts: number;
+  ability1Casts: number;
+  ability2Casts: number;
+  ultimateCasts: number;
+  totalAbilityCasts: number;
+  multiKills: number;
+  aces: number;
+  maxKillsInRound: number;
 };
 
 export type MatchSpecialEvent = {
@@ -56,21 +83,52 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     name: "Lz Incident",
     emoji: "🪦",
     description: "Die more than the number of rounds.",
-    matches: (stats) => stats.rounds < stats.deaths,
+    matches: (stats) => stats.roundsPlayed < stats.deaths,
   },
   {
     key: "victim",
     name: "Victim",
-    emoji: "🥀",
+    emoji: "☠️",
     description: "Die all the rounds.",
-    matches: (stats) => stats.rounds === stats.deaths,
+    matches: (stats) => stats.roundsPlayed === stats.deaths,
   },
   {
     key: "flavor-victim",
     name: "Fla-VOR Victim",
     emoji: "🕯️",
     description: "Almost die all the rounds.",
-    matches: (stats) => stats.rounds - stats.deaths < stats.rounds - 4,
+    matches: (stats) =>
+      stats.roundsPlayed > 0 &&
+      stats.deaths < stats.roundsPlayed &&
+      stats.roundsPlayed - stats.deaths <= 4,
+  },
+  {
+    key: "reverse-ivg",
+    name: "gvI",
+    emoji: "🔪",
+    description: "Great First Bloods!",
+    matches: (stats) => stats.firstBloods - stats.firstDeaths >= +3,
+  },
+  {
+    key: "fuba",
+    name: "Fubá Try So Hard",
+    emoji: "🥀",
+    description: "Great K/D, but someone made some mistakes...",
+    matches: (stats) => stats.firstBloods - stats.firstDeaths >= +3,
+  },
+  {
+    key: "foca-hs",
+    name: "AMO UMA X0X0TINH Aim",
+    emoji: "🏹",
+    description: "Terrible HS%.",
+    matches: (stats) => stats.headshotPercent <= 20,
+  },
+  {
+    key: "sacy",
+    name: "Gayci",
+    emoji: "👨🏻‍🦲",
+    description: "A lot of bodyshots!",
+    matches: (stats) => stats.bodyshotPercent >= 70,
   },
 ];
 
