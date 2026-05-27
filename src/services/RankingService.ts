@@ -9,6 +9,8 @@ export type RankingRow = {
   kills: number;
   deaths: number;
   assists: number;
+  firstBloods: number;
+  firstDeaths: number;
   kd: number;
   winRate: number;
 };
@@ -26,7 +28,17 @@ export class RankingService {
           wins: { $sum: { $cond: ["$won", 1, 0] } },
           kills: { $sum: { $ifNull: ["$kills", 0] } },
           deaths: { $sum: { $ifNull: ["$deaths", 0] } },
-          assists: { $sum: { $ifNull: ["$assists", 0] } }
+          assists: { $sum: { $ifNull: ["$assists", 0] } },
+          firstBloods: {
+            $sum: {
+              $ifNull: ["$firstBloods", { $cond: ["$firstBlood", 1, 0] }]
+            }
+          },
+          firstDeaths: {
+            $sum: {
+              $ifNull: ["$firstDeaths", { $cond: ["$firstDeath", 1, 0] }]
+            }
+          }
         }
       },
       {
@@ -40,6 +52,8 @@ export class RankingService {
           kills: 1,
           deaths: 1,
           assists: 1,
+          firstBloods: 1,
+          firstDeaths: 1,
           kd: { $cond: [{ $eq: ["$deaths", 0] }, "$kills", { $divide: ["$kills", "$deaths"] }] },
           winRate: { $cond: [{ $eq: ["$matches", 0] }, 0, { $divide: ["$wins", "$matches"] }] }
         }

@@ -43,7 +43,9 @@ export class MockMatchProvider implements MatchProvider {
         assists,
         score: kills * 200 + assists * 55,
         combatScore: randomBetween(120, 360),
-        won
+        won,
+        firstBloods: randomBetween(0, 4),
+        firstDeaths: randomBetween(0, 3)
       },
       raw: { generated: true }
     };

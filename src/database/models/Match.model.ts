@@ -21,6 +21,8 @@ export type MatchDocument = {
   score?: number;
   combatScore?: number;
   won?: boolean;
+  firstBloods?: number;
+  firstDeaths?: number;
   raw?: unknown;
   postedAt?: Date;
   createdAt: Date;
@@ -49,6 +51,8 @@ const MatchSchema = new Schema<MatchDocument>(
     score: { type: Number },
     combatScore: { type: Number },
     won: { type: Boolean },
+    firstBloods: { type: Number },
+    firstDeaths: { type: Number },
     raw: { type: Schema.Types.Mixed },
     postedAt: { type: Date }
   },

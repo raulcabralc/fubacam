@@ -5,15 +5,17 @@ export const buildRankingEmbed = (rows: RankingRow[], requestedBy?: User) => {
   const description = rows.length
     ? rows
         .map((row, index) => {
+          const medal = ["🥇", "🥈", "🥉"][index] ?? `#${index + 1}`;
           const kd = row.kd.toFixed(2);
           const winRate = `${Math.round(row.winRate * 100)}%`;
-          return `**${index + 1}. ${row.riotName}#${row.tagLine}** - ${row.wins}W/${row.matches}J | KD ${kd} | WR ${winRate}`;
+          return `${medal} **${row.riotName}#${row.tagLine}**\n${row.wins}W in ${row.matches} matches • KD ${kd} • WR ${winRate} • 🩸 FB ${row.firstBloods} • 💀 FD ${row.firstDeaths}`;
         })
-        .join("\n")
-    : "No matches registered yet.";
+        .join("\n\n")
+    : "No matches registered yet. Generate a mock match or wait for the next tracking cycle.";
 
   return new EmbedBuilder()
-    .setTitle("FBL Internal Ranking")
+    .setAuthor({ name: "Fubacam Rankings", iconURL: requestedBy?.client.user?.displayAvatarURL() })
+    .setTitle("🏁 FBL Internal Ranking")
     .setColor(0xff4655)
     .setDescription(description)
     .setFooter(

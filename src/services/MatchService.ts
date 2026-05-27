@@ -31,6 +31,8 @@ export class MatchService {
           score: match.playerStats.score,
           combatScore: match.playerStats.combatScore,
           won: match.playerStats.won,
+          firstBloods: match.playerStats.firstBloods,
+          firstDeaths: match.playerStats.firstDeaths,
           raw: match.raw
         }
       },
@@ -53,7 +55,8 @@ export class MatchService {
     const channel = await client.channels.fetch(settings.summaryChannelId);
     if (!channel?.isTextBased() || !("send" in channel)) return false;
 
-    await channel.send({ embeds: [buildMatchSummaryEmbed(match)] });
+    const matchUser = await client.users.fetch(match.playerDiscordUserId).catch(() => undefined);
+    await channel.send({ embeds: [buildMatchSummaryEmbed(match, { matchUser })] });
     match.postedAt = new Date();
     await match.save();
     return true;

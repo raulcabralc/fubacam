@@ -14,7 +14,7 @@ export const lastMatchCommand: BotCommand = {
     let match = await context.matchService.lastMatch(interaction.guildId, user.id);
 
     if (match) {
-      await interaction.reply({ embeds: [buildMatchSummaryEmbed(match, interaction.user)] });
+      await interaction.reply({ embeds: [buildMatchSummaryEmbed(match, { matchUser: user, requestedBy: interaction.user })] });
       return;
     }
 
@@ -58,6 +58,6 @@ export const lastMatchCommand: BotCommand = {
       return;
     }
 
-    await interaction.editReply({ embeds: [buildMatchSummaryEmbed(match, interaction.user)] });
+    await interaction.editReply({ embeds: [buildMatchSummaryEmbed(match, { matchUser: user, requestedBy: interaction.user })] });
   }
 };

@@ -27,6 +27,8 @@ export type ProviderMatchPlayerStats = {
   score?: number;
   combatScore?: number;
   won?: boolean;
+  firstBloods?: number;
+  firstDeaths?: number;
 };
 
 export type ProviderMatch = {

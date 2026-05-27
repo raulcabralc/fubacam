@@ -50,7 +50,7 @@ export const mockMatchCommand: BotCommand = {
           user: interaction.user,
           status: "success"
         }),
-        buildMatchSummaryEmbed(result.match, interaction.user)
+        buildMatchSummaryEmbed(result.match, { matchUser: interaction.user, requestedBy: interaction.user })
       ]
     });
   }
