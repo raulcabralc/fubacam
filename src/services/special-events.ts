@@ -104,7 +104,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
   },
   {
     key: "reverse-ivg",
-    name: "gvI",
+    name: "gvI (Reverse-Ivg)",
     emoji: "🔪",
     description: "Great First Bloods!",
     matches: (stats) => stats.firstBloods - stats.firstDeaths >= +3,
@@ -113,8 +113,15 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     key: "fuba",
     name: "Fubá Try So Hard",
     emoji: "🥀",
-    description: "Great K/D, but someone made some mistakes...",
-    matches: (stats) => stats.firstBloods - stats.firstDeaths >= +3,
+    description: "Great K/D. Someone made some mistakes...",
+    matches: (stats) => stats.kills / stats.deaths >= 1.3 && !stats.won,
+  },
+  {
+    key: "great-kd",
+    name: "Carry",
+    emoji: "🎒",
+    description: "Great K/D.",
+    matches: (stats) => stats.kills / stats.deaths >= 1.3 && stats.won === true,
   },
   {
     key: "foca-hs",
@@ -128,7 +135,15 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     name: "Gayci",
     emoji: "👨🏻‍🦲",
     description: "A lot of bodyshots!",
-    matches: (stats) => stats.bodyshotPercent >= 70,
+    matches: (stats) => stats.bodyshotPercent >= 80,
+  },
+  {
+    key: "lz-bait",
+    name: "Lz Classic",
+    emoji: "🪝",
+    description: "Great K/D, but where is the FB conversion?",
+    matches: (stats) =>
+      stats.kills / stats.deaths >= 1.25 && stats.firstBloods <= 2,
   },
 ];
 

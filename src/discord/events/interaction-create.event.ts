@@ -24,10 +24,18 @@ export const registerInteractionCreateEvent = (client: Client, context: AppConte
       });
 
       const payload = { embeds: [buildErrorEmbed(message, interaction.user)] };
-      if (interaction.deferred || interaction.replied) {
-        await interaction.followUp(payload);
-      } else {
-        await interaction.reply(payload);
+      try {
+        if (interaction.deferred || interaction.replied) {
+          await interaction.followUp(payload);
+        } else {
+          await interaction.reply(payload);
+        }
+      } catch (replyError) {
+        logger.warn("Could not send command error response", {
+          command: interaction.commandName,
+          user: interaction.user.id,
+          error: replyError instanceof Error ? replyError.message : String(replyError)
+        });
       }
     }
   });

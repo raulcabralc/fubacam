@@ -8,6 +8,7 @@ import { createMatchProvider } from "./providers/ProviderFactory";
 import { startTrackingScheduler } from "./scheduler/tracking.scheduler";
 import { AppContext } from "./services/AppContext";
 import { GuildSettingsService } from "./services/GuildSettingsService";
+import { HenrikMmrService } from "./services/HenrikMmrService";
 import { MatchService } from "./services/MatchService";
 import { PlayerService } from "./services/PlayerService";
 import { RankingService } from "./services/RankingService";
@@ -22,6 +23,7 @@ const main = async () => {
   const provider = createMatchProvider();
   const playerService = new PlayerService(provider);
   const guildSettingsService = new GuildSettingsService();
+  const henrikMmrService = new HenrikMmrService();
   const matchService = new MatchService();
   const rankingService = new RankingService();
   const riotAuthService = new RiotAuthService(playerService);
@@ -31,6 +33,7 @@ const main = async () => {
     provider,
     playerService,
     guildSettingsService,
+    henrikMmrService,
     matchService,
     rankingService,
     riotAuthService,

@@ -71,6 +71,7 @@ Fubacam uses a provider-based architecture. The Discord commands and services de
 
 Current providers:
 
+- `HenrikMatchProvider` - Unofficial HenrikDev API provider for faster private-team testing.
 - `RiotMatchProvider` - Official Riot Games API provider for Valorant match data.
 - `TrackerMatchProvider` - Legacy experimental provider for Tracker Network API.
 - `MockMatchProvider` - Development and test provider for fake matches.
@@ -108,12 +109,18 @@ AUTH_SERVER_PORT=3001
 TRACKER_API_KEY=
 TRACKER_API_BASE_URL=https://public-api.tracker.gg
 
+HENRIK_API_KEY=
+HENRIK_API_BASE_URL=https://api.henrikdev.xyz
+HENRIK_REGION=br
+HENRIK_PLATFORM=pc
+
 MATCH_PROVIDER=riot
 ```
 
 `MATCH_PROVIDER` supports:
 
 - `riot`
+- `henrik`
 - `mock`
 - `tracker`
 

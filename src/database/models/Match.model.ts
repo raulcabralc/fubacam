@@ -44,6 +44,14 @@ export type MatchDocument = {
   multiKills?: number;
   aces?: number;
   maxKillsInRound?: number;
+  rank?: string;
+  rankTierId?: number;
+  rr?: number;
+  rrChange?: number;
+  elo?: number;
+  rankChanged?: boolean;
+  previousRank?: string;
+  previousRankTierId?: number;
   raw?: unknown;
   postedAt?: Date;
   createdAt: Date;
@@ -95,12 +103,20 @@ const MatchSchema = new Schema<MatchDocument>(
     multiKills: { type: Number },
     aces: { type: Number },
     maxKillsInRound: { type: Number },
+    rank: { type: String },
+    rankTierId: { type: Number },
+    rr: { type: Number },
+    rrChange: { type: Number },
+    elo: { type: Number },
+    rankChanged: { type: Boolean },
+    previousRank: { type: String },
+    previousRankTierId: { type: Number },
     raw: { type: Schema.Types.Mixed },
     postedAt: { type: Date }
   },
   { timestamps: true }
 );
 
-MatchSchema.index({ guildId: 1, provider: 1, providerMatchId: 1 }, { unique: true });
+MatchSchema.index({ guildId: 1, provider: 1, providerMatchId: 1, playerDiscordUserId: 1 }, { unique: true });
 
 export const MatchModel = model<MatchDocument>("Match", MatchSchema);

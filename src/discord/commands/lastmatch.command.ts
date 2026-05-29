@@ -11,15 +11,15 @@ export const lastMatchCommand: BotCommand = {
   async execute(interaction, context) {
     if (!interaction.guildId) throw new Error("This command can only be used in a server.");
     const user = interaction.options.getUser("user") ?? interaction.user;
-    let match = await context.matchService.lastMatch(interaction.guildId, user.id);
-
-    if (match) {
-      await interaction.reply({ embeds: [buildMatchSummaryEmbed(match, { matchUser: user, requestedBy: interaction.user })] });
-      return;
-    }
-
     const playerDocument = await context.playerService.findByDiscordUser(interaction.guildId, user.id);
+
     if (!playerDocument) {
+      const match = await context.matchService.lastMatch(interaction.guildId, user.id);
+      if (match) {
+        await interaction.reply({ embeds: [buildMatchSummaryEmbed(match, { matchUser: user, requestedBy: interaction.user })] });
+        return;
+      }
+
       await interaction.reply({
         embeds: [
           buildCommandFeedbackEmbed({
@@ -36,13 +36,35 @@ export const lastMatchCommand: BotCommand = {
     await interaction.deferReply();
 
     const player = context.playerService.toRegisteredPlayer(playerDocument);
-    const providerMatches = await context.provider.getRecentMatches(player);
+    let latestProviderMatchId: string | undefined;
 
-    for (const providerMatch of providerMatches) {
-      await context.matchService.saveIfNew(interaction.guildId, player, providerMatch);
+    try {
+      if (context.provider.getName() === "henrik") {
+        await context.matchService.deleteMalformedProviderMatches(interaction.guildId, user.id, "henrik");
+      }
+
+      const providerMatches = await context.provider.getRecentMatches(player);
+      latestProviderMatchId = providerMatches[0]?.providerMatchId;
+
+      for (const providerMatch of providerMatches) {
+        await context.matchService.saveIfNew(interaction.guildId, player, providerMatch);
+      }
+    } catch (error) {
+      const fallbackMatch =
+        context.provider.getName() === "henrik"
+          ? await context.matchService.lastValidProviderMatch(interaction.guildId, user.id, "henrik")
+          : await context.matchService.lastMatch(interaction.guildId, user.id);
+      if (fallbackMatch) {
+        await interaction.editReply({ embeds: [buildMatchSummaryEmbed(fallbackMatch, { matchUser: user, requestedBy: interaction.user })] });
+        return;
+      }
+
+      throw error;
     }
 
-    match = await context.matchService.lastMatch(interaction.guildId, user.id);
+    const match = latestProviderMatchId
+      ? await context.matchService.findProviderMatch(interaction.guildId, user.id, context.provider.getName(), latestProviderMatchId)
+      : await context.matchService.lastMatch(interaction.guildId, user.id);
 
     if (!match) {
       await interaction.editReply({

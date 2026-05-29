@@ -9,13 +9,17 @@ const EnvSchema = z
     MONGODB_URI: z.string().min(1),
     TRACKER_API_KEY: z.string().optional().default(""),
     TRACKER_API_BASE_URL: z.string().url().default("https://public-api.tracker.gg"),
+    HENRIK_API_KEY: z.string().optional().default(""),
+    HENRIK_API_BASE_URL: z.string().url().default("https://api.henrikdev.xyz"),
+    HENRIK_REGION: z.enum(["eu", "na", "latam", "br", "ap", "kr"]).default("br"),
+    HENRIK_PLATFORM: z.enum(["pc", "console"]).default("pc"),
     RIOT_API_KEY: z.string().optional().default(""),
     RIOT_CLIENT_ID: z.string().optional().default(""),
     RIOT_CLIENT_SECRET: z.string().optional().default(""),
     RIOT_REDIRECT_URI: z.string().url().optional(),
     RIOT_API_REGION: z.enum(["americas", "asia", "europe", "sea"]).default("americas"),
     AUTH_SERVER_PORT: z.coerce.number().int().positive().default(3001),
-    MATCH_PROVIDER: z.enum(["tracker", "mock", "riot"]).default("tracker"),
+    MATCH_PROVIDER: z.enum(["tracker", "mock", "riot", "henrik"]).default("tracker"),
     TRACKING_CRON: z.string().default("*/5 * * * *"),
     NODE_ENV: z.string().default("development")
   })
@@ -41,6 +45,14 @@ const EnvSchema = z
         code: z.ZodIssueCode.custom,
         path: ["RIOT_CLIENT_ID"],
         message: "RIOT_CLIENT_ID, RIOT_CLIENT_SECRET and RIOT_REDIRECT_URI are required when MATCH_PROVIDER=riot"
+      });
+    }
+
+    if (value.MATCH_PROVIDER === "henrik" && !value.HENRIK_API_KEY) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["HENRIK_API_KEY"],
+        message: "HENRIK_API_KEY is required when MATCH_PROVIDER=henrik"
       });
     }
   });

@@ -18,7 +18,7 @@ export type RankingRow = {
 export class RankingService {
   async getGuildRanking(guildId: string): Promise<RankingRow[]> {
     const rows = await MatchModel.aggregate<RankingRow>([
-      { $match: { guildId } },
+      { $match: { guildId, $or: [{ queue: /^competitive$/i }, { mode: /^competitive$/i }] } },
       {
         $group: {
           _id: "$playerDiscordUserId",

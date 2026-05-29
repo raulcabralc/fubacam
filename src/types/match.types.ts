@@ -1,4 +1,4 @@
-export type MatchProviderName = "tracker" | "mock" | "riot";
+export type MatchProviderName = "tracker" | "mock" | "riot" | "henrik";
 
 export type RegisteredPlayer = {
   id: string;
@@ -50,6 +50,14 @@ export type ProviderMatchPlayerStats = {
   multiKills?: number;
   aces?: number;
   maxKillsInRound?: number;
+  rank?: string;
+  rankTierId?: number;
+  rr?: number;
+  rrChange?: number;
+  elo?: number;
+  rankChanged?: boolean;
+  previousRank?: string;
+  previousRankTierId?: number;
 };
 
 export type ProviderMatch = {
