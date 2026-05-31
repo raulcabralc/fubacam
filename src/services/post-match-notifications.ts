@@ -39,7 +39,7 @@ export const postMatchNotifications: PostMatchNotification[] = [
       "Sends a follow-up message when a player has a brutal match by FB/FD, kill differential, or ACS.",
     shouldSend: ({ match }) => isStinkerMatch(match),
     buildMessage: ({ match, playerMention, roleMention }) => ({
-      content: `${roleMention} ${playerMention} has dropped a stinker match!`,
+      content: `${roleMention} ${playerMention} has dropped a stinker performance!`,
       allowedMentions: {
         roles: [FUBALICIOUS_ROLE_ID],
         users: [match.playerDiscordUserId],

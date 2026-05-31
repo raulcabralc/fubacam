@@ -24,7 +24,8 @@ export class PlayerService {
       {
         ...input,
         providerPlayerId: validation.providerPlayerId,
-        active: true
+        active: true,
+        trackingStartedAt: new Date()
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -58,7 +59,8 @@ export class PlayerService {
         tagLine: input.tagLine,
         riotPuuid: input.riotPuuid,
         providerPlayerId: input.riotPuuid,
-        active: true
+        active: true,
+        trackingStartedAt: new Date()
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );

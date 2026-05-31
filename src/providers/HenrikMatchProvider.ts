@@ -3,6 +3,7 @@ import { HenrikMmrService, MatchMmr } from "../services/HenrikMmrService";
 import { HenrikMatchPayload, HenrikMatchesResponseSchema, HenrikPlayerPayload } from "../types/henrik.types";
 import { ProviderMatch, ProviderPlayerValidation, RegisteredPlayer } from "../types/match.types";
 import { logger } from "../utils/logger";
+import { getHenrikRateLimitMessage, isHenrikRateLimited, markHenrikRateLimited } from "./henrik-rate-limit";
 import { MatchProvider } from "./MatchProvider";
 
 export class HenrikMatchProvider implements MatchProvider {
@@ -35,16 +36,14 @@ export class HenrikMatchProvider implements MatchProvider {
   }
 
   async getRecentMatches(player: RegisteredPlayer): Promise<ProviderMatch[]> {
-    const [matches, mmrByMatchId] = await Promise.all([
-      this.fetchMatches(player.riotName, player.tagLine, 10),
-      this.mmrService.getMatchMmrHistory(player).catch((error) => {
-        logger.warn("Henrik MMR history lookup failed", {
-          player: `${player.riotName}#${player.tagLine}`,
-          error: error instanceof Error ? error.message : String(error)
-        });
-        return new Map<string, MatchMmr>();
-      })
-    ]);
+    const matches = await this.fetchMatches(player.riotName, player.tagLine, 10);
+    const mmrByMatchId = await this.mmrService.getMatchMmrHistory(player).catch((error) => {
+      logger.warn("Henrik MMR history lookup failed", {
+        player: `${player.riotName}#${player.tagLine}`,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return new Map<string, MatchMmr>();
+    });
 
     return matches
       .filter(isCompetitiveMatch)
@@ -54,6 +53,10 @@ export class HenrikMatchProvider implements MatchProvider {
   }
 
   private async fetchMatches(riotName: string, tagLine: string, size: number) {
+    if (isHenrikRateLimited()) {
+      throw new Error(getHenrikRateLimitMessage());
+    }
+
     const encodedName = encodeURIComponent(riotName);
     const encodedTag = encodeURIComponent(tagLine);
     const path = `/valorant/v4/matches/${env.HENRIK_REGION}/${env.HENRIK_PLATFORM}/${encodedName}/${encodedTag}`;
@@ -69,7 +72,8 @@ export class HenrikMatchProvider implements MatchProvider {
 
     if (!response.ok) {
       if (response.status === 429) {
-        throw new Error("Henrik API rate limit reached. Try again after the current rate-limit window.");
+        markHenrikRateLimited(response);
+        throw new Error(getHenrikRateLimitMessage());
       }
       throw new Error(`Henrik API returned HTTP ${response.status} for ${url.pathname}`);
     }
@@ -143,6 +147,7 @@ export class HenrikMatchProvider implements MatchProvider {
         multiKills: roundStats.multiKills,
         aces: roundStats.aces,
         maxKillsInRound: roundStats.maxKillsInRound,
+        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak,
         rank: mmr?.rank,
         rankTierId: mmr?.rankTierId,
         rr: mmr?.rr,
@@ -235,6 +240,8 @@ const deriveRoundStats = (match: HenrikMatchPayload, player: HenrikPlayerPayload
   let multiKills = 0;
   let aces = 0;
   let maxKillsInRound = 0;
+  let currentKilllessRoundStreak = 0;
+  let maxKilllessRoundStreak = 0;
   let totalRemaining = 0;
 
   const killsByRound = new Map<number, Record<string, unknown>[]>();
@@ -264,6 +271,12 @@ const deriveRoundStats = (match: HenrikMatchPayload, player: HenrikPlayerPayload
 
     const playerRoundKills = kills.filter((kill) => readPuuid(kill, "killer") === player.puuid || readText(kill, "killer_puuid") === player.puuid).length;
     maxKillsInRound = Math.max(maxKillsInRound, playerRoundKills);
+    if (playerRoundKills === 0) {
+      currentKilllessRoundStreak += 1;
+      maxKilllessRoundStreak = Math.max(maxKilllessRoundStreak, currentKilllessRoundStreak);
+    } else {
+      currentKilllessRoundStreak = 0;
+    }
     if (playerRoundKills >= 2) multiKills += 1;
     if (playerRoundKills >= 5) aces += 1;
 
@@ -278,7 +291,8 @@ const deriveRoundStats = (match: HenrikMatchPayload, player: HenrikPlayerPayload
     totalRemaining,
     multiKills,
     aces,
-    maxKillsInRound
+    maxKillsInRound,
+    maxKilllessRoundStreak
   };
 };
 

@@ -50,6 +50,7 @@ export type ProviderMatchPlayerStats = {
   multiKills?: number;
   aces?: number;
   maxKillsInRound?: number;
+  maxKilllessRoundStreak?: number;
   rank?: string;
   rankTierId?: number;
   rr?: number;

@@ -74,6 +74,7 @@ export const getMatchDisplayStats = (match: MatchDocument) => {
     multiKills: match.multiKills ?? 0,
     aces: match.aces ?? 0,
     maxKillsInRound: match.maxKillsInRound ?? 0,
+    maxKilllessRoundStreak: match.maxKilllessRoundStreak ?? 0,
   });
 
   return {

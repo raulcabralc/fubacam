@@ -8,6 +8,7 @@ export type PlayerDocument = {
   providerPlayerId?: string;
   riotPuuid?: string;
   active: boolean;
+  trackingStartedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -20,7 +21,8 @@ const PlayerSchema = new Schema<PlayerDocument>(
     tagLine: { type: String, required: true },
     providerPlayerId: { type: String },
     riotPuuid: { type: String, index: true },
-    active: { type: Boolean, required: true, default: true }
+    active: { type: Boolean, required: true, default: true },
+    trackingStartedAt: { type: Date }
   },
   { timestamps: true }
 );

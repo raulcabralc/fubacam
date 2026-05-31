@@ -32,6 +32,7 @@ export type MatchSpecialEventStats = {
   multiKills: number;
   aces: number;
   maxKillsInRound: number;
+  maxKilllessRoundStreak: number;
 };
 
 export type MatchSpecialEvent = {
@@ -128,7 +129,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     name: "AMO UMA X0X0TINH Aim",
     emoji: "🏹",
     description: "Terrible HS%.",
-    matches: (stats) => stats.headshotPercent <= 20,
+    matches: (stats) => stats.headshotPercent <= 15,
   },
   {
     key: "sacy",
@@ -143,9 +144,22 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🪝",
     description: "Great K/D, but where is the FB conversion?",
     matches: (stats) =>
-      stats.kills / stats.deaths >= 1.25 && stats.firstBloods <= 2,
+      getKillDeathRatio(stats) >= 1.25 &&
+      stats.kills >= 18 &&
+      stats.firstBloods <= Math.floor(stats.kills / 8),
+  },
+  {
+    key: "lz-dont-bait",
+    name: "Lz Doesn't Bait Incident",
+    emoji: "🕒",
+    description: "A lot of rounds without a single kill.",
+    matches: (stats) => stats.maxKilllessRoundStreak >= 10,
   },
 ];
 
 export const getMatchSpecialEvents = (stats: MatchSpecialEventStats) =>
   matchSpecialEvents.filter((event) => event.matches(stats));
+
+const getKillDeathRatio = (
+  stats: Pick<MatchSpecialEventStats, "kills" | "deaths">,
+) => (stats.deaths > 0 ? stats.kills / stats.deaths : stats.kills);

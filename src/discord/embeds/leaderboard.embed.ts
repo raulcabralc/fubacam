@@ -15,7 +15,7 @@ export const buildLeaderboardEmbed = (rows: PlayerMmr[]) => {
 
   return new EmbedBuilder()
     .setTitle("🏆 FBL Ranked Leaderboard")
-    .setColor(0xff4655)
+    .setColor(0xf1c40f)
     .setDescription(description)
     .setTimestamp();
 };

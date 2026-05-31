@@ -16,7 +16,7 @@ export const buildRankingEmbed = (rows: RankingRow[], requestedBy?: User) => {
   return new EmbedBuilder()
     .setAuthor({ name: "Fubacam Rankings", iconURL: requestedBy?.client.user?.displayAvatarURL() })
     .setTitle("🏁 FBL Internal Ranking")
-    .setColor(0xff4655)
+    .setColor(0xf1c40f)
     .setDescription(description)
     .setFooter(
       requestedBy

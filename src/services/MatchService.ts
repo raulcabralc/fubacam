@@ -56,6 +56,7 @@ export class MatchService {
       multiKills: match.playerStats.multiKills,
       aces: match.playerStats.aces,
       maxKillsInRound: match.playerStats.maxKillsInRound,
+      maxKilllessRoundStreak: match.playerStats.maxKilllessRoundStreak,
       rank: match.playerStats.rank,
       rankTierId: match.playerStats.rankTierId,
       rr: match.playerStats.rr,

@@ -44,6 +44,7 @@ export type MatchDocument = {
   multiKills?: number;
   aces?: number;
   maxKillsInRound?: number;
+  maxKilllessRoundStreak?: number;
   rank?: string;
   rankTierId?: number;
   rr?: number;
@@ -103,6 +104,7 @@ const MatchSchema = new Schema<MatchDocument>(
     multiKills: { type: Number },
     aces: { type: Number },
     maxKillsInRound: { type: Number },
+    maxKilllessRoundStreak: { type: Number },
     rank: { type: String },
     rankTierId: { type: Number },
     rr: { type: Number },

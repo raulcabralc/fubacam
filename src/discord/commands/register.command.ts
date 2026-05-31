@@ -12,6 +12,8 @@ export const registerCommand: BotCommand = {
     const guildId = interaction.guildId;
     if (!guildId) throw new Error("This command can only be used in a server.");
 
+    await interaction.deferReply();
+
     const riotName = interaction.options.getString("riotname", true).trim();
     const tagLine = interaction.options.getString("tagline", true).replace(/^#/, "").trim();
     const player = await context.playerService.register({
@@ -21,7 +23,7 @@ export const registerCommand: BotCommand = {
       tagLine
     });
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [
         buildCommandFeedbackEmbed({
           title: "Player Registered",

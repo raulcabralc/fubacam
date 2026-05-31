@@ -132,7 +132,8 @@ export class RiotMatchProvider implements MatchProvider {
         ultimateCasts: abilityCasts?.ultimateCasts,
         multiKills: roundStats.multiKills,
         aces: roundStats.aces,
-        maxKillsInRound: roundStats.maxKillsInRound
+        maxKillsInRound: roundStats.maxKillsInRound,
+        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak
       },
       raw: match
     };
@@ -155,6 +156,8 @@ const deriveRoundStats = (match: RiotMatchPayload, puuid: string) => {
   let multiKills = 0;
   let aces = 0;
   let maxKillsInRound = 0;
+  let currentKilllessRoundStreak = 0;
+  let maxKilllessRoundStreak = 0;
 
   for (const round of match.roundResults) {
     if (round.bombPlanter === puuid) plants += 1;
@@ -172,6 +175,12 @@ const deriveRoundStats = (match: RiotMatchPayload, puuid: string) => {
 
     const roundKills = playerRound.kills.length;
     maxKillsInRound = Math.max(maxKillsInRound, roundKills);
+    if (roundKills === 0) {
+      currentKilllessRoundStreak += 1;
+      maxKilllessRoundStreak = Math.max(maxKilllessRoundStreak, currentKilllessRoundStreak);
+    } else {
+      currentKilllessRoundStreak = 0;
+    }
     if (roundKills >= 2) multiKills += 1;
     if (roundKills >= 5) aces += 1;
 
@@ -207,7 +216,8 @@ const deriveRoundStats = (match: RiotMatchPayload, puuid: string) => {
     totalRemaining,
     multiKills,
     aces,
-    maxKillsInRound
+    maxKillsInRound,
+    maxKilllessRoundStreak
   };
 };
 

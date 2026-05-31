@@ -1,4 +1,5 @@
 import { env } from "../config/env";
+import { getHenrikRateLimitMessage, isHenrikRateLimited } from "../providers/henrik-rate-limit";
 import { HenrikMmrHistoryResponseSchema, HenrikMmrResponseSchema } from "../types/henrik.types";
 import { logger } from "../utils/logger";
 
@@ -26,10 +27,21 @@ export type MatchMmr = {
   previousRankTierId?: number;
 };
 
+const MMR_HISTORY_CACHE_MS = 5 * 60 * 1000;
+const MMR_HISTORY_FAILURE_CACHE_MS = 60 * 1000;
+const mmrHistoryCache = new Map<string, { expiresAt: number; data: Map<string, MatchMmr> }>();
+
 export class HenrikMmrService {
   async getPlayerMmr(player: { riotName: string; tagLine: string; discordUserId: string }): Promise<PlayerMmr | null> {
     if (!env.HENRIK_API_KEY) {
       throw new Error("HENRIK_API_KEY is not configured");
+    }
+    if (isHenrikRateLimited()) {
+      logger.warn("Skipping Henrik MMR request during rate-limit cooldown", {
+        player: `${player.riotName}#${player.tagLine}`,
+        error: getHenrikRateLimitMessage()
+      });
+      return null;
     }
 
     const encodedName = encodeURIComponent(player.riotName);
@@ -87,6 +99,16 @@ export class HenrikMmrService {
       throw new Error("HENRIK_API_KEY is not configured");
     }
 
+    const cacheKey = `${player.riotName.toLowerCase()}#${player.tagLine.toLowerCase()}`;
+    const cached = mmrHistoryCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
+    if (isHenrikRateLimited()) {
+      return new Map();
+    }
+
     const encodedName = encodeURIComponent(player.riotName);
     const encodedTag = encodeURIComponent(player.tagLine);
     const path = `/valorant/v2/mmr-history/${env.HENRIK_REGION}/${env.HENRIK_PLATFORM}/${encodedName}/${encodedTag}`;
@@ -104,6 +126,7 @@ export class HenrikMmrService {
         player: `${player.riotName}#${player.tagLine}`,
         status: response.status
       });
+      mmrHistoryCache.set(cacheKey, { expiresAt: Date.now() + MMR_HISTORY_FAILURE_CACHE_MS, data: new Map() });
       return new Map();
     }
 
@@ -113,11 +136,12 @@ export class HenrikMmrService {
         player: `${player.riotName}#${player.tagLine}`,
         issues: parsed.success ? [] : parsed.error.issues
       });
+      mmrHistoryCache.set(cacheKey, { expiresAt: Date.now() + MMR_HISTORY_FAILURE_CACHE_MS, data: new Map() });
       return new Map();
     }
 
     const rows = parsed.data.data.history;
-    return new Map(
+    const mapped = new Map(
       rows
         .filter((row) => row.match_id)
         .map((row, index) => {
@@ -140,5 +164,7 @@ export class HenrikMmrService {
           ];
         })
     );
+    mmrHistoryCache.set(cacheKey, { expiresAt: Date.now() + MMR_HISTORY_CACHE_MS, data: mapped });
+    return mapped;
   }
 }
