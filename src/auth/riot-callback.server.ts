@@ -36,6 +36,8 @@ export const startRiotCallbackServer = (riotAuthService: RiotAuthService) => {
     }
   });
 
+  if (env.MATCH_PROVIDER !== "riot") return undefined;
+
   server.listen(env.AUTH_SERVER_PORT, () => {
     logger.info("Riot OAuth callback server started", {
       port: env.AUTH_SERVER_PORT,

@@ -143,10 +143,20 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     name: "Lz Classic",
     emoji: "🪝",
     description: "Great K/D, but where is the FB conversion?",
-    matches: (stats) =>
-      getKillDeathRatio(stats) >= 1.25 &&
-      stats.kills >= 18 &&
-      stats.firstBloods <= Math.floor(stats.kills / 8),
+    matches: (stats) => {
+      const openingDuels = stats.firstBloods + stats.firstDeaths;
+      const kd = stats.deaths > 0 ? stats.kills / stats.deaths : stats.kills;
+      const openingDuelRate = openingDuels / Math.max(stats.roundsPlayed, 1);
+      const killsPerOpeningDuel = stats.kills / Math.max(openingDuels, 1);
+
+      return (
+        stats.roundsPlayed >= 18 &&
+        stats.kills >= 20 &&
+        kd >= 1.3 &&
+        openingDuelRate <= 0.16 &&
+        killsPerOpeningDuel >= 5
+      );
+    },
   },
   {
     key: "lz-dont-bait",
