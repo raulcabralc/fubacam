@@ -23,6 +23,10 @@ export const registerInteractionCreateEvent = (client: Client, context: AppConte
         error: message
       });
 
+      if (message.includes("Unknown interaction")) {
+        return;
+      }
+
       const payload = { embeds: [buildErrorEmbed(message, interaction.user)] };
       try {
         if (interaction.deferred || interaction.replied) {

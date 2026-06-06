@@ -23,22 +23,6 @@ export const matchCommand: BotCommand = {
 
     await interaction.deferReply();
 
-    if (index === 1) {
-      const playerDocument = await context.playerService.findByDiscordUser(interaction.guildId, user.id);
-      if (playerDocument) {
-        const player = context.playerService.toRegisteredPlayer(playerDocument);
-
-        if (context.provider.getName() === "henrik") {
-          await context.matchService.deleteMalformedProviderMatches(interaction.guildId, user.id, "henrik");
-        }
-
-        const providerMatches = await context.provider.getRecentMatches(player);
-        for (const providerMatch of providerMatches) {
-          await context.matchService.saveIfNew(interaction.guildId, player, providerMatch);
-        }
-      }
-    }
-
     const match = await context.matchService.matchByIndex(interaction.guildId, user.id, index);
 
     if (!match) {
