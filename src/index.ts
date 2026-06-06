@@ -1,4 +1,5 @@
 import { env } from "./config/env";
+import { startHealthServer } from "./health/health.server";
 import { startRiotCallbackServer } from "./auth/riot-callback.server";
 import { connectMongo } from "./database/mongo";
 import { createDiscordClient } from "./discord/client";
@@ -20,6 +21,8 @@ import http from "node:http";
 const port = Number(process.env.PORT) || 3000;
 
 const main = async () => {
+  startHealthServer();
+
   http
     .createServer((_, res) => {
       res.writeHead(200, { "Content-Type": "text/plain" });

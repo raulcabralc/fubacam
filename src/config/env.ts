@@ -19,6 +19,7 @@ const EnvSchema = z
     RIOT_REDIRECT_URI: z.string().url().optional(),
     RIOT_API_REGION: z.enum(["americas", "asia", "europe", "sea"]).default("americas"),
     AUTH_SERVER_PORT: z.coerce.number().int().positive().default(3001),
+    PORT: z.coerce.number().int().positive().default(3000),
     MATCH_PROVIDER: z.enum(["tracker", "mock", "riot", "henrik"]).default("tracker"),
     TRACKING_CRON: z.string().default("*/5 * * * *"),
     NODE_ENV: z.string().default("development")
