@@ -6,6 +6,6 @@ import {
 
 export interface MatchProvider {
   getName(): string;
-  getRecentMatches(player: RegisteredPlayer): Promise<ProviderMatch[]>;
+  getRecentMatches(player: RegisteredPlayer, options?: { forceRefresh?: boolean }): Promise<ProviderMatch[]>;
   validatePlayer?(riotName: string, tagLine: string): Promise<ProviderPlayerValidation>;
 }

@@ -55,6 +55,7 @@ export type MatchDocument = {
   previousRankTierId?: number;
   raw?: unknown;
   postedAt?: Date;
+  postMatchNotificationKeys?: string[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -114,7 +115,8 @@ const MatchSchema = new Schema<MatchDocument>(
     previousRank: { type: String },
     previousRankTierId: { type: Number },
     raw: { type: Schema.Types.Mixed },
-    postedAt: { type: Date }
+    postedAt: { type: Date },
+    postMatchNotificationKeys: { type: [String], default: [] }
   },
   { timestamps: true }
 );

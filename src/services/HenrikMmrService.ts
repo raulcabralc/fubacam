@@ -30,12 +30,19 @@ export type MatchMmr = {
 const MMR_HISTORY_CACHE_MS = 5 * 60 * 1000;
 const MMR_HISTORY_FAILURE_CACHE_MS = 60 * 1000;
 const mmrHistoryCache = new Map<string, { expiresAt: number; data: Map<string, MatchMmr> }>();
+const playerMmrCache = new Map<string, { expiresAt: number; data: PlayerMmr | null }>();
 
 export class HenrikMmrService {
   async getPlayerMmr(player: { riotName: string; tagLine: string; discordUserId: string }): Promise<PlayerMmr | null> {
     if (!env.HENRIK_API_KEY) {
       throw new Error("HENRIK_API_KEY is not configured");
     }
+    const cacheKey = `${player.discordUserId}:${player.riotName.toLowerCase()}#${player.tagLine.toLowerCase()}`;
+    const cached = playerMmrCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     if (isHenrikRateLimited()) {
       logger.warn("Skipping Henrik MMR request during rate-limit cooldown", {
         player: `${player.riotName}#${player.tagLine}`,
@@ -61,6 +68,7 @@ export class HenrikMmrService {
         player: `${player.riotName}#${player.tagLine}`,
         status: response.status
       });
+      playerMmrCache.set(cacheKey, { expiresAt: Date.now() + MMR_HISTORY_FAILURE_CACHE_MS, data: null });
       return null;
     }
 
@@ -70,11 +78,12 @@ export class HenrikMmrService {
         player: `${player.riotName}#${player.tagLine}`,
         issues: parsed.success ? [] : parsed.error.issues
       });
+      playerMmrCache.set(cacheKey, { expiresAt: Date.now() + MMR_HISTORY_FAILURE_CACHE_MS, data: null });
       return null;
     }
 
     const current = parsed.data.data.current;
-    return {
+    const mmr = {
       riotName: parsed.data.data.account?.name ?? player.riotName,
       tagLine: parsed.data.data.account?.tag ?? player.tagLine,
       discordUserId: player.discordUserId,
@@ -85,6 +94,8 @@ export class HenrikMmrService {
       lastChange: current.last_change,
       leaderboardRank: current.leaderboard_placement?.rank
     };
+    playerMmrCache.set(cacheKey, { expiresAt: Date.now() + MMR_HISTORY_CACHE_MS, data: mmr });
+    return mmr;
   }
 
   async getGuildLeaderboard(players: Array<{ riotName: string; tagLine: string; discordUserId: string }>) {

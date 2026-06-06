@@ -7,12 +7,14 @@ import { MatchProvider } from "../providers/MatchProvider";
 import { GuildSettingsService } from "./GuildSettingsService";
 import { MatchService } from "./MatchService";
 import { PlayerService } from "./PlayerService";
+import { HenrikMmrService } from "./HenrikMmrService";
 import { logger } from "../utils/logger";
 import { sleep } from "../utils/sleep";
 
 export class TrackingService {
   private active = false;
   private lastRunAt?: Date;
+  private readonly henrikMmrService = new HenrikMmrService();
 
   constructor(
     private readonly client: Client,
@@ -56,7 +58,7 @@ export class TrackingService {
       const player = this.playerService.toRegisteredPlayer(playerDocument);
 
       try {
-        const matches = await this.provider.getRecentMatches(player);
+        const matches = await this.provider.getRecentMatches(player, { forceRefresh: true });
         const trackingStartedAt = playerDocument.trackingStartedAt ?? playerDocument.createdAt;
         for (const match of matches) {
           if (trackingStartedAt && getMatchFinishedAt(match) <= trackingStartedAt) {
@@ -66,6 +68,7 @@ export class TrackingService {
 
           await this.matchService.saveAndPost(this.client, guildId, player, match);
         }
+        this.enrichHenrikMmr(guildId, player);
       } catch (error) {
         logger.warn("Tracking failed for player", {
           guildId,
@@ -83,8 +86,23 @@ export class TrackingService {
         }
       }
 
-      await sleep(1_500);
+      await sleep(500);
     }
+  }
+
+  private enrichHenrikMmr(guildId: string, player: ReturnType<PlayerService["toRegisteredPlayer"]>) {
+    if (this.provider.getName() !== "henrik") return;
+
+    void this.henrikMmrService
+      .getMatchMmrHistory(player)
+      .then((mmrByMatchId) => this.matchService.applyHenrikMmr(guildId, player, mmrByMatchId, this.client))
+      .catch((error) => {
+        logger.warn("Could not enrich Henrik match MMR", {
+          guildId,
+          player: `${player.riotName}#${player.tagLine}`,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      });
   }
 }
 

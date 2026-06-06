@@ -17,73 +17,69 @@ export type PostMatchNotification = {
   buildMessage: (context: PostMatchNotificationContext) => MessageCreateOptions;
 };
 
+export type BuiltPostMatchNotification = {
+  key: string;
+  message: MessageCreateOptions;
+};
+
 export const postMatchNotifications: PostMatchNotification[] = [
   {
     key: "rank-drop",
     name: "Rank drop",
-    description:
-      "Sends a follow-up message when a player drops to a lower rank after the match.",
+    description: "Sends a follow-up message when a player drops to a lower rank after the match.",
     shouldSend: ({ match }) => isRankDrop(match),
     buildMessage: ({ match, playerMention, roleMention }) => ({
       content: `${roleMention} ${playerMention} just dropped to ${match.rank}!`,
       allowedMentions: {
         roles: [FUBALICIOUS_ROLE_ID],
-        users: [match.playerDiscordUserId],
-      },
-    }),
+        users: [match.playerDiscordUserId]
+      }
+    })
   },
   {
     key: "stinker-match",
     name: "Stinker match",
-    description:
-      "Sends a follow-up message when a player has a brutal match by FB/FD, kill differential, or ACS.",
+    description: "Sends a follow-up message when a player has a brutal match by FB/FD, kill differential, or ACS.",
     shouldSend: ({ match }) => isStinkerMatch(match),
     buildMessage: ({ match, playerMention, roleMention }) => ({
-      content: `${roleMention} ${playerMention} has dropped a stinker performance!`,
+      content: `${roleMention} ${playerMention} has dropped a stinker of a match!`,
       allowedMentions: {
         roles: [FUBALICIOUS_ROLE_ID],
-        users: [match.playerDiscordUserId],
-      },
-    }),
-  },
+        users: [match.playerDiscordUserId]
+      }
+    })
+  }
 ];
 
-export const getPostMatchNotifications = (match: MatchDocument) => {
+export const getPostMatchNotifications = (match: MatchDocument): BuiltPostMatchNotification[] => {
   const context = {
     match,
     playerMention: `<@${match.playerDiscordUserId}>`,
-    roleMention: `<@&${FUBALICIOUS_ROLE_ID}>`,
+    roleMention: `<@&${FUBALICIOUS_ROLE_ID}>`
   };
 
   return postMatchNotifications
     .filter((notification) => notification.shouldSend(context))
-    .map((notification) => notification.buildMessage(context));
+    .map((notification) => ({
+      key: notification.key,
+      message: notification.buildMessage(context)
+    }));
 };
 
-export const isRankDrop = (
-  match: Pick<
-    MatchDocument,
-    "rank" | "rankTierId" | "previousRank" | "previousRankTierId"
-  >,
-) => {
+export const isRankDrop = (match: Pick<MatchDocument, "rank" | "rankTierId" | "previousRank" | "previousRankTierId">) => {
   const current = match.rankTierId ?? getRankOrder(match.rank);
   const previous = match.previousRankTierId ?? getRankOrder(match.previousRank);
   return current !== undefined && previous !== undefined && current < previous;
 };
 
 export const isStinkerMatch = (
-  match: Pick<
-    MatchDocument,
-    "firstBloods" | "firstDeaths" | "kills" | "deaths" | "combatScore"
-  >,
+  match: Pick<MatchDocument, "firstBloods" | "firstDeaths" | "kills" | "deaths" | "combatScore">,
 ) => {
   const openingDuelDiff = (match.firstBloods ?? 0) - (match.firstDeaths ?? 0);
   const killDiff = (match.kills ?? 0) - (match.deaths ?? 0);
   const acs = match.combatScore;
 
-  return (
-    openingDuelDiff <= -5 || killDiff <= -10 || (acs !== undefined && acs < 100)
-  );
+  return openingDuelDiff <= -5 || killDiff <= -10 || (acs !== undefined && acs < 100);
 };
 
 const getRankOrder = (rank?: string) => {
@@ -92,9 +88,7 @@ const getRankOrder = (rank?: string) => {
   if (normalized === "unrated") return 0;
   if (normalized === "radiant") return 25;
 
-  const match = normalized.match(
-    /^(iron|bronze|silver|gold|platinum|diamond|ascendant|immortal)\s+([1-3])$/,
-  );
+  const match = normalized.match(/^(iron|bronze|silver|gold|platinum|diamond|ascendant|immortal)\s+([1-3])$/);
   if (!match) return undefined;
 
   const baseByRank: Record<string, number> = {
@@ -105,7 +99,7 @@ const getRankOrder = (rank?: string) => {
     platinum: 13,
     diamond: 16,
     ascendant: 19,
-    immortal: 22,
+    immortal: 22
   };
 
   return baseByRank[match[1]] + Number(match[2]) - 1;

@@ -1,14 +1,14 @@
 import { env } from "../config/env";
-import { HenrikMmrService, MatchMmr } from "../services/HenrikMmrService";
 import { HenrikMatchPayload, HenrikMatchesResponseSchema, HenrikPlayerPayload } from "../types/henrik.types";
 import { ProviderMatch, ProviderPlayerValidation, RegisteredPlayer } from "../types/match.types";
 import { logger } from "../utils/logger";
 import { getHenrikRateLimitMessage, isHenrikRateLimited, markHenrikRateLimited } from "./henrik-rate-limit";
 import { MatchProvider } from "./MatchProvider";
 
-export class HenrikMatchProvider implements MatchProvider {
-  private readonly mmrService = new HenrikMmrService();
+const RECENT_MATCHES_CACHE_MS = 2 * 60 * 1000;
+const recentMatchesCache = new Map<string, { expiresAt: number; matches: ProviderMatch[] }>();
 
+export class HenrikMatchProvider implements MatchProvider {
   getName() {
     return "henrik";
   }
@@ -35,21 +35,29 @@ export class HenrikMatchProvider implements MatchProvider {
     }
   }
 
-  async getRecentMatches(player: RegisteredPlayer): Promise<ProviderMatch[]> {
-    const matches = await this.fetchMatches(player.riotName, player.tagLine, 10);
-    const mmrByMatchId = await this.mmrService.getMatchMmrHistory(player).catch((error) => {
-      logger.warn("Henrik MMR history lookup failed", {
-        player: `${player.riotName}#${player.tagLine}`,
-        error: error instanceof Error ? error.message : String(error)
-      });
-      return new Map<string, MatchMmr>();
-    });
+  async getRecentMatches(player: RegisteredPlayer, options?: { forceRefresh?: boolean }): Promise<ProviderMatch[]> {
+    const cacheKey = `${env.HENRIK_REGION}:${env.HENRIK_PLATFORM}:${player.riotName.toLowerCase()}#${player.tagLine.toLowerCase()}`;
+    const cached = recentMatchesCache.get(cacheKey);
+    if (!options?.forceRefresh && cached && cached.expiresAt > Date.now()) {
+      return cached.matches;
+    }
+    if (!options?.forceRefresh && cached && isHenrikRateLimited()) {
+      return cached.matches;
+    }
 
-    return matches
+    const matches = await this.fetchMatches(player.riotName, player.tagLine, 10);
+    const mappedMatches = matches
       .filter(isCompetitiveMatch)
-      .map((match) => this.toProviderMatch(match, player, mmrByMatchId))
+      .map((match) => this.toProviderMatch(match, player))
       .filter((match): match is ProviderMatch => Boolean(match))
       .sort((left, right) => right.startedAt.getTime() - left.startedAt.getTime());
+
+    recentMatchesCache.set(cacheKey, {
+      expiresAt: Date.now() + RECENT_MATCHES_CACHE_MS,
+      matches: mappedMatches
+    });
+
+    return mappedMatches;
   }
 
   private async fetchMatches(riotName: string, tagLine: string, size: number) {
@@ -90,7 +98,7 @@ export class HenrikMatchProvider implements MatchProvider {
     return parsed.data.data;
   }
 
-  private toProviderMatch(match: HenrikMatchPayload, player: RegisteredPlayer, mmrByMatchId?: Map<string, MatchMmr>): ProviderMatch | null {
+  private toProviderMatch(match: HenrikMatchPayload, player: RegisteredPlayer): ProviderMatch | null {
     const participant = findPlayer(match, player.riotName, player.tagLine);
     if (!participant) return null;
 
@@ -102,7 +110,6 @@ export class HenrikMatchProvider implements MatchProvider {
     const roundStats = deriveRoundStats(match, participant);
     const shotStats = deriveShotStats(participant);
     const providerMatchId = match.metadata.match_id ?? match.metadata.matchid ?? `${player.guildId}-${player.discordUserId}-${readMatchStart(match).getTime()}`;
-    const mmr = mmrByMatchId?.get(providerMatchId);
 
     return {
       provider: this.getName(),
@@ -147,15 +154,7 @@ export class HenrikMatchProvider implements MatchProvider {
         multiKills: roundStats.multiKills,
         aces: roundStats.aces,
         maxKillsInRound: roundStats.maxKillsInRound,
-        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak,
-        rank: mmr?.rank,
-        rankTierId: mmr?.rankTierId,
-        rr: mmr?.rr,
-        rrChange: mmr?.rrChange,
-        elo: mmr?.elo,
-        rankChanged: mmr?.rankChanged,
-        previousRank: mmr?.previousRank,
-        previousRankTierId: mmr?.previousRankTierId
+        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak
       },
       raw: match
     };

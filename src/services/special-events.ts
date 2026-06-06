@@ -142,7 +142,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     key: "lz-bait",
     name: "Lz Classic",
     emoji: "🪝",
-    description: "Great K/D, but where is the FB conversion?",
+    description: "Great K/D, but where is the first contact conversion?",
     matches: (stats) => {
       const openingDuels = stats.firstBloods + stats.firstDeaths;
       const kd = stats.deaths > 0 ? stats.kills / stats.deaths : stats.kills;

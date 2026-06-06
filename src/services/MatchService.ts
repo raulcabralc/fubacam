@@ -2,6 +2,7 @@ import { Client } from "discord.js";
 import { MatchModel } from "../database/models/Match.model";
 import { GuildSettingsModel } from "../database/models/GuildSettings.model";
 import { buildCompactMatchSummaryEmbed } from "../discord/embeds/match-compact.embed";
+import type { MatchMmr } from "./HenrikMmrService";
 import { ProviderMatch, RegisteredPlayer } from "../types/match.types";
 import { logger } from "../utils/logger";
 import { getPostMatchNotifications } from "./post-match-notifications";
@@ -117,15 +118,18 @@ export class MatchService {
         })
       ]
     });
-    for (const notification of getPostMatchNotifications(match)) {
-      await channel.send(notification).catch((error) => {
+    const sentNotificationKeys = [...(match.postMatchNotificationKeys ?? [])];
+    for (const notification of getPostMatchNotifications(match).filter((item) => !sentNotificationKeys.includes(item.key))) {
+      await channel.send(notification.message).catch((error) => {
         logger.warn("Could not post match notification", {
           guildId,
           matchId: match.providerMatchId,
           error: error instanceof Error ? error.message : String(error)
         });
       });
+      sentNotificationKeys.push(notification.key);
     }
+    match.postMatchNotificationKeys = sentNotificationKeys;
     if (options?.markPosted ?? true) {
       match.postedAt = new Date();
       await match.save();
@@ -147,6 +151,82 @@ export class MatchService {
       }
     }
     return result;
+  }
+
+  async applyHenrikMmr(guildId: string, player: RegisteredPlayer, mmrByMatchId: Map<string, MatchMmr>, client?: Client) {
+    if (!mmrByMatchId.size) return;
+
+    for (const mmr of mmrByMatchId.values()) {
+      await MatchModel.updateOne(
+          {
+            guildId,
+            provider: "henrik",
+            providerMatchId: mmr.matchId,
+            playerDiscordUserId: player.discordUserId
+          },
+          {
+            $set: {
+              rank: mmr.rank,
+              rankTierId: mmr.rankTierId,
+              rr: mmr.rr,
+              rrChange: mmr.rrChange,
+              elo: mmr.elo,
+              rankChanged: mmr.rankChanged,
+              previousRank: mmr.previousRank,
+              previousRankTierId: mmr.previousRankTierId
+            }
+          }
+      );
+
+      if (client) {
+        const match = await MatchModel.findOne({
+          guildId,
+          provider: "henrik",
+          providerMatchId: mmr.matchId,
+          playerDiscordUserId: player.discordUserId
+        });
+        if (match?._id) {
+          await this.postPendingMatchNotifications(client, guildId, String(match._id), {
+            allowedKeys: ["rank-drop"],
+            maxPostedAgeMs: 60 * 60 * 1000
+          });
+        }
+      }
+    }
+  }
+
+  private async postPendingMatchNotifications(
+    client: Client,
+    guildId: string,
+    matchId: string,
+    options?: {
+      allowedKeys?: string[];
+      maxPostedAgeMs?: number;
+    },
+  ) {
+    const settings = await GuildSettingsModel.findOne({ guildId });
+    if (!settings?.summaryChannelId) return;
+
+    const match = await MatchModel.findById(matchId);
+    if (!match) return;
+    if (options?.maxPostedAgeMs && (!match.postedAt || Date.now() - match.postedAt.getTime() > options.maxPostedAgeMs)) return;
+
+    const pendingNotifications = getPostMatchNotifications(match)
+      .filter((notification) => !options?.allowedKeys || options.allowedKeys.includes(notification.key))
+      .filter((notification) => !(match.postMatchNotificationKeys ?? []).includes(notification.key));
+    if (!pendingNotifications.length) return;
+
+    const channel = await client.channels.fetch(settings.summaryChannelId).catch(() => undefined);
+    if (!channel?.isTextBased() || !("send" in channel)) return;
+
+    const sentNotificationKeys = [...(match.postMatchNotificationKeys ?? [])];
+    for (const notification of pendingNotifications) {
+      await channel.send(notification.message);
+      sentNotificationKeys.push(notification.key);
+    }
+
+    match.postMatchNotificationKeys = sentNotificationKeys;
+    await match.save();
   }
 
   async lastMatch(guildId: string, discordUserId: string) {
