@@ -15,8 +15,20 @@ import { RankingService } from "./services/RankingService";
 import { RiotAuthService } from "./services/RiotAuthService";
 import { TrackingService } from "./services/TrackingService";
 import { logger } from "./utils/logger";
+import http from "node:http";
+
+const port = Number(process.env.PORT) || 3000;
 
 const main = async () => {
+  http
+    .createServer((_, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Fubacam is running\n");
+    })
+    .listen(port, "0.0.0.0", () => {
+      console.log(`[info] Health server listening on port ${port}`);
+    });
+
   await connectMongo();
 
   const client = createDiscordClient();
@@ -27,7 +39,13 @@ const main = async () => {
   const matchService = new MatchService();
   const rankingService = new RankingService();
   const riotAuthService = new RiotAuthService(playerService);
-  const trackingService = new TrackingService(client, provider, playerService, matchService, guildSettingsService);
+  const trackingService = new TrackingService(
+    client,
+    provider,
+    playerService,
+    matchService,
+    guildSettingsService,
+  );
 
   const context: AppContext = {
     provider,
@@ -37,7 +55,7 @@ const main = async () => {
     matchService,
     rankingService,
     riotAuthService,
-    trackingService
+    trackingService,
   };
 
   registerReadyEvent(client);
@@ -53,7 +71,7 @@ const main = async () => {
 
 main().catch((error) => {
   logger.error("Fatal boot error", {
-    error: error instanceof Error ? error.message : String(error)
+    error: error instanceof Error ? error.message : String(error),
   });
   process.exit(1);
 });
