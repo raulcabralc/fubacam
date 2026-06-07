@@ -4,6 +4,8 @@ import { RiotAuthService } from "../services/RiotAuthService";
 import { logger } from "../utils/logger";
 
 export const startRiotCallbackServer = (riotAuthService: RiotAuthService) => {
+  if (env.MATCH_PROVIDER !== "riot") return undefined;
+
   const server = http.createServer(async (request, response) => {
     const host = request.headers.host ?? `localhost:${env.AUTH_SERVER_PORT}`;
     const url = new URL(request.url ?? "/", `http://${host}`);

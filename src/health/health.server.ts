@@ -2,10 +2,15 @@ import { createServer } from "node:http";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
 
-let healthServer: ReturnType<typeof createServer> | undefined;
+const healthServerKey = Symbol.for("fubacam.healthServer");
+
+type GlobalWithHealthServer = typeof globalThis & {
+  [healthServerKey]?: ReturnType<typeof createServer>;
+};
 
 export const startHealthServer = () => {
-  if (healthServer) return healthServer;
+  const globalWithHealthServer = globalThis as GlobalWithHealthServer;
+  if (globalWithHealthServer[healthServerKey]) return globalWithHealthServer[healthServerKey];
 
   const server = createServer((request, response) => {
     if (request.url === "/health" || request.url === "/") {
@@ -18,7 +23,7 @@ export const startHealthServer = () => {
     response.end(JSON.stringify({ ok: false }));
   });
 
-  healthServer = server;
+  globalWithHealthServer[healthServerKey] = server;
 
   server.on("error", (error: NodeJS.ErrnoException) => {
     if (error.code === "EADDRINUSE") {
