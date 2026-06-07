@@ -3,13 +3,30 @@ import { env } from "../config/env";
 import { logger } from "../utils/logger";
 
 const healthServerKey = Symbol.for("fubacam.healthServer");
+const healthServerErrorGuardKey = Symbol.for("fubacam.healthServerErrorGuard");
 
 type GlobalWithHealthServer = typeof globalThis & {
   [healthServerKey]?: ReturnType<typeof createServer>;
+  [healthServerErrorGuardKey]?: boolean;
 };
 
 export const startHealthServer = () => {
   const globalWithHealthServer = globalThis as GlobalWithHealthServer;
+  if (!globalWithHealthServer[healthServerErrorGuardKey]) {
+    globalWithHealthServer[healthServerErrorGuardKey] = true;
+    process.on("uncaughtException", (error: NodeJS.ErrnoException & { port?: number }) => {
+      if (error.code === "EADDRINUSE" && error.port === env.PORT) {
+        logger.warn("Ignoring duplicate health port listener", { port: env.PORT });
+        return;
+      }
+
+      logger.error("Uncaught exception", {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      process.exit(1);
+    });
+  }
+
   if (globalWithHealthServer[healthServerKey]) return globalWithHealthServer[healthServerKey];
 
   const server = createServer((request, response) => {

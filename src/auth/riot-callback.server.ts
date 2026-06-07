@@ -5,6 +5,7 @@ import { logger } from "../utils/logger";
 
 export const startRiotCallbackServer = (riotAuthService: RiotAuthService) => {
   if (env.MATCH_PROVIDER !== "riot") return undefined;
+  if (env.AUTH_SERVER_PORT === env.PORT) return undefined;
 
   const server = http.createServer(async (request, response) => {
     const host = request.headers.host ?? `localhost:${env.AUTH_SERVER_PORT}`;
