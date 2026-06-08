@@ -94,6 +94,7 @@ export const valorantAgentEmojis: Record<string, string> = {
   breach: "<:agent_breach:1513610753628962956>",
   brimstone: "<:agent_brimstone:1513611093820571840>",
   chamber: "<:agent_chamber:1513610681012977664>",
+  clove: "<:agent_clove:1513620046755397752>",
   cypher: "<:agent_cypher:1513611055031386313>",
   deadlock: "<:agent_deadlock:1513610641892442152>",
   fade: "<:agent_fade:1513610436367487037>",
@@ -101,7 +102,6 @@ export const valorantAgentEmojis: Record<string, string> = {
   harbor: "<:agent_harbor:1513610406055116860>",
   jett: "<:agent_jett:1513610588335374548>",
   kayo: "<:agent_kayo:1513610909153755267>",
-  "kay/o": "<:agent_kayo:1513610909153755267>",
   killjoy: "<:agent_killjoy:1513610530605105244>",
   neon: "<:agent_neon:1513610871912534297>",
   omen: "<:agent_omen:1513610561487765755>",
@@ -112,6 +112,8 @@ export const valorantAgentEmojis: Record<string, string> = {
   skye: "<:agent_skye:1513610977839546379>",
   sova: "<:agent_sova:1513610472358936577>",
   viper: "<:agent_viper:1513610800676212756>",
+  vyse: "<:agent_vyse:1513620070356619304>",
+  waylay: "<:agent_waylay:1513620098022375704>",
   yoru: "<:agent_yoru:1513611172434415766>",
 };
 

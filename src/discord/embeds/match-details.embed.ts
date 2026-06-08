@@ -1,6 +1,6 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
-import { fubaEmojis, getAgentEmoji, getRankEmoji } from "../emojis";
+import { fubaEmojis, getAgentEmoji, getRankEmoji, getRankEmojiByName } from "../emojis";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
 
 type DetailPlayer = {
@@ -12,6 +12,7 @@ type DetailPlayer = {
   assists: number;
   score: number;
   acs: number;
+  rank?: string;
   tier?: number;
   won?: boolean;
 };
@@ -64,8 +65,13 @@ const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
       const score = readNumber(stats?.score);
       const team = readString(player.team_id) ?? readString(player.teamId) ?? readString(player.team) ?? "Unknown";
 
+      const riotId = tag ? `${name}#${tag}` : name;
+      const isTarget = riotId.toLowerCase() === `${match.riotName}#${match.tagLine}`.toLowerCase();
+      const tier = readPlayerTier(player) ?? (isTarget ? match.rankTierId : undefined);
+      const rank = readPlayerRank(player) ?? (isTarget ? match.rank : undefined);
+
       return {
-        riotId: tag ? `${name}#${tag}` : name,
+        riotId,
         team,
         agent: readString(getRecord(player.agent)?.name) ?? readString(player.character) ?? readString(player.characterId) ?? "Unknown",
         kills: readNumber(stats?.kills),
@@ -73,7 +79,8 @@ const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
         assists: readNumber(stats?.assists),
         score,
         acs: Math.round(score / rounds),
-        tier: readOptionalNumber(player.competitive_tier) ?? readOptionalNumber(player.competitiveTier) ?? readOptionalNumber(player.currenttier),
+        rank,
+        tier,
         won: readTeamWon(match, team)
       };
     });
@@ -96,7 +103,7 @@ const formatTeam = (players: DetailPlayer[], matchMvpAcs: number) => {
 
   return players
     .map((player) => {
-      const emoji = getRankEmoji(player.tier);
+      const emoji = player.tier !== undefined ? getRankEmoji(player.tier) : getRankEmojiByName(player.rank);
       const mvpEmoji = player.acs === matchMvpAcs ? `${fubaEmojis.matchMvp} ` : player.acs === teamMvpAcs ? `${fubaEmojis.teamMvp} ` : "";
       return `${mvpEmoji}**${player.riotId} - ${getAgentEmoji(player.agent)} ${player.agent}**\n${emoji} ${player.acs} - ${player.kills}/${player.deaths}/${player.assists}`;
     })
@@ -157,3 +164,20 @@ const getRecord = (value: unknown) => (value && typeof value === "object" ? (val
 const readString = (value: unknown) => (typeof value === "string" ? value : undefined);
 const readNumber = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
 const readOptionalNumber = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
+
+const readPlayerTier = (player: Record<string, unknown>) =>
+  readOptionalNumber(player.competitive_tier) ??
+  readOptionalNumber(player.competitiveTier) ??
+  readOptionalNumber(player.currenttier) ??
+  readOptionalNumber(player.current_tier) ??
+  readOptionalNumber(getRecord(player.tier)?.id) ??
+  readOptionalNumber(getRecord(player.rank)?.id);
+
+const readPlayerRank = (player: Record<string, unknown>) =>
+  readString(player.currenttierpatched) ??
+  readString(player.currentTierPatched) ??
+  readString(player.current_tier_patched) ??
+  readString(player.competitiveTierName) ??
+  readString(getRecord(player.tier)?.name) ??
+  readString(getRecord(player.rank)?.name) ??
+  readString(player.rank);

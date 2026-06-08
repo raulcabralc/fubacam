@@ -15,7 +15,6 @@ export const buildMatchSummaryEmbed = (
   const stats = getMatchDisplayStats(match);
   const agent = resolveValorantAgentAsset(match.agent);
   const agentName = agent?.name ?? "Unknown";
-  const agentLabel = `${getAgentEmoji(agentName)} ${agentName}`;
   const playerName = `${match.riotName}#${match.tagLine}`;
   const userLabel = options?.matchUser ? ` (${options.matchUser.username})` : "";
   const rankLine = formatRankLine(match);
@@ -26,23 +25,25 @@ export const buildMatchSummaryEmbed = (
       name: `${playerName}${userLabel}`,
       iconURL: options?.matchUser?.displayAvatarURL() ?? agent?.imageUrl ?? options?.requestedBy?.client.user?.displayAvatarURL(),
     })
-    .setTitle(`${stats.resultIcon} ${stats.result} ${stats.score !== "N/A" ? stats.score : ""} ${match.map ? `on ${match.map}` : ""}`.trim())
+    .setTitle(
+      `${stats.resultIcon} ${stats.result} ${stats.score !== "N/A" ? stats.score : ""} ${match.map ? `on ${match.map}` : ""} ${mvpLabel ?? ""}`.trim(),
+    )
     .setColor(match.won ? 0x2ecc71 : 0xe74c3c)
     .setDescription(
-      [`**${playerName}** played ${agentLabel}`, stats.mapAndMode, mvpLabel, rankLine, getTrackerLink(match.providerMatchId)]
+      [stats.mapAndMode, rankLine, getTrackerLink(match.providerMatchId)]
         .filter(Boolean)
         .join("\n"),
     )
     .addFields(
-      { name: "Agent", value: agentLabel, inline: true },
+      { name: "Agent", value: `${getAgentEmoji(agentName)} ${agentName}`, inline: true },
       { name: "Duration", value: stats.duration, inline: true },
-      { name: "\u200B", value: "\u200B", inline: true },
+      { name: "ACS", value: String(match.combatScore ?? "N/A"), inline: true },
       { name: "K / D / A", value: stats.kda, inline: true },
       { name: "K/D", value: stats.kd, inline: true },
-      { name: "ACS", value: String(match.combatScore ?? "N/A"), inline: true },
-      { name: "First Bloods", value: `**${stats.firstBloods}**`, inline: true },
-      { name: "First Deaths", value: `**${stats.firstDeaths}**`, inline: true },
-      { name: "HS%", value: `**${stats.headshotPercent}%**`, inline: true },
+      { name: "HS%", value: `${stats.headshotPercent}%`, inline: true },
+      { name: "FB", value: String(stats.firstBloods), inline: true },
+      { name: "FD", value: String(stats.firstDeaths), inline: true },
+      { name: "\u200B", value: "\u200B", inline: true },
     )
     .setTimestamp(match.startedAt);
 
