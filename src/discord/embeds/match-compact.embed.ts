@@ -1,15 +1,19 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
+import { fubaEmojis, getAgentEmoji } from "../emojis";
 import { formatRankLine, formatSpecialEventNote, getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
+import { getMatchMvpLabel } from "./mvp.helpers";
 
 export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { matchUser?: User; timestamp?: Date }) => {
   const stats = getMatchDisplayStats(match);
   const agent = resolveValorantAgentAsset(match.agent);
   const agentName = agent?.name ?? "Unknown";
+  const agentLabel = `${getAgentEmoji(agentName)} ${agentName}`;
   const playerName = `${match.riotName}#${match.tagLine}`;
   const userLabel = options?.matchUser ? ` (${options.matchUser.username})` : "";
   const rankLine = formatRankLine(match);
+  const mvpLabel = getMatchMvpLabel(match);
   const acs = match.combatScore ?? "N/A";
 
   const embed = new EmbedBuilder()
@@ -22,7 +26,8 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
     .setDescription(
       [
         stats.mapAndMode,
-        `**${agentName}** • KDA **${stats.kda}** • K/D **${stats.kd}** • ACS **${acs}**`,
+        mvpLabel,
+        `**${agentLabel}** • KDA **${stats.kda}** • K/D **${stats.kd}** • ${fubaEmojis.acs} ACS **${acs}**`,
         rankLine,
         getTrackerLink(match.providerMatchId),
       ]
@@ -33,7 +38,7 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
 
   if (stats.specialEvents.length) {
     embed.addFields({
-      name: "✨ Special Events",
+      name: `${fubaEmojis.specialEvents} Special Events`,
       value: formatSpecialEventNote(stats.specialEvents),
       inline: false,
     });

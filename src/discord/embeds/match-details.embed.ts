@@ -1,10 +1,10 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
-import { getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
+import { fubaEmojis, getAgentEmoji, getRankEmoji } from "../emojis";
+import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
 
 type DetailPlayer = {
-  name: string;
-  tag: string;
+  riotId: string;
   team: string;
   agent: string;
   kills: number;
@@ -12,20 +12,33 @@ type DetailPlayer = {
   assists: number;
   score: number;
   acs: number;
+  tier?: number;
   won?: boolean;
 };
 
 export const buildMatchDetailsEmbed = (match: MatchDocument, _requestedBy?: User) => {
-  const stats = getMatchDisplayStats(match);
-  const teams = groupTeams(extractPlayers(match));
+  const targetRiotId = `${match.riotName}#${match.tagLine}`.toLowerCase();
+  const players = extractPlayers(match);
+  const target = players.find((player) => player.riotId.toLowerCase() === targetRiotId);
+  const teams = groupTeams(players, target?.team);
+  const matchMvpAcs = Math.max(...players.map((player) => player.acs));
+  const playerAgent = resolveValorantAgentAsset(target?.agent ?? match.agent);
+  const result = match.won ? "won" : "lost";
+  const mode = match.mode ?? match.queue ?? "Competitive";
+  const score = formatScore(match);
+  const timeline = buildTimeline(match, target?.team);
 
   const embed = new EmbedBuilder()
-    .setTitle(`${stats.resultIcon} Match Details ${stats.score !== "N/A" ? stats.score : ""}`.trim())
+    .setAuthor({
+      name: `${match.riotName}#${match.tagLine} ${result} a ${mode} game`,
+      iconURL: playerAgent?.imageUrl
+    })
+    .setTitle(`${match.map ?? "Unknown Map"} - ${score}`)
     .setColor(match.won ? 0x2ecc71 : 0xe74c3c)
-    .setDescription(`**${stats.mapAndMode}** • ${stats.duration}\n${getTrackerLink(match.providerMatchId)}`)
     .addFields(
-      { name: teamHeader("Team A", teams[0] ?? []), value: formatTeam(teams[0] ?? [], "Team A"), inline: false },
-      { name: teamHeader("Team B", teams[1] ?? []), value: formatTeam(teams[1] ?? [], "Team B"), inline: false },
+      { name: "Your Team", value: formatTeam(teams.yourTeam, matchMvpAcs), inline: false },
+      { name: "Timeline", value: timeline || "No round timeline available.", inline: false },
+      { name: "Enemy Team", value: formatTeam(teams.enemyTeam, matchMvpAcs), inline: false }
     )
     .setTimestamp(match.startedAt);
 
@@ -33,85 +46,114 @@ export const buildMatchDetailsEmbed = (match: MatchDocument, _requestedBy?: User
 };
 
 const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
-  const raw = match.raw as { players?: unknown; metadata?: { rounds_played?: number } } | undefined;
+  const raw = getRecord(match.raw);
   const rawPlayers = Array.isArray(raw?.players)
     ? raw.players
     : raw?.players && typeof raw.players === "object" && Array.isArray((raw.players as { all_players?: unknown[] }).all_players)
       ? (raw.players as { all_players: unknown[] }).all_players
       : [];
 
+  const rounds = readNumber(getRecord(raw?.metadata)?.rounds_played) || inferRoundsFromTeams(match) || 1;
+
   return rawPlayers
     .filter((player): player is Record<string, unknown> => Boolean(player && typeof player === "object"))
     .map((player) => {
       const stats = getRecord(player.stats);
+      const name = readString(player.name) ?? readString(player.gameName) ?? "Unknown";
+      const tag = readString(player.tag) ?? readString(player.tagLine) ?? "";
       const score = readNumber(stats?.score);
-      const rounds = readNumber(raw?.metadata?.rounds_played) || inferRoundsFromTeams(match);
-      const team = readString(player.team_id) ?? readString(player.team) ?? "Unknown";
+      const team = readString(player.team_id) ?? readString(player.teamId) ?? readString(player.team) ?? "Unknown";
 
       return {
-        name: readString(player.name) ?? "Unknown",
-        tag: readString(player.tag) ?? "",
+        riotId: tag ? `${name}#${tag}` : name,
         team,
-        agent: readString(getRecord(player.agent)?.name) ?? readString(player.character) ?? "Unknown",
+        agent: readString(getRecord(player.agent)?.name) ?? readString(player.character) ?? readString(player.characterId) ?? "Unknown",
         kills: readNumber(stats?.kills),
         deaths: readNumber(stats?.deaths),
         assists: readNumber(stats?.assists),
         score,
-        acs: rounds ? Math.round(score / rounds) : 0,
-        won: readTeamWon(match, team),
+        acs: Math.round(score / rounds),
+        tier: readOptionalNumber(player.competitive_tier) ?? readOptionalNumber(player.competitiveTier) ?? readOptionalNumber(player.currenttier),
+        won: readTeamWon(match, team)
       };
-    })
-    .sort((left, right) => right.acs - left.acs);
+    });
 };
 
-const groupTeams = (players: DetailPlayer[]) => {
-  const teams = new Map<string, DetailPlayer[]>();
-  for (const player of players) {
-    const key = player.team.toLowerCase();
-    teams.set(key, [...(teams.get(key) ?? []), player]);
-  }
+const groupTeams = (players: DetailPlayer[], targetTeam?: string) => {
+  const teamKeys = [...new Set(players.map((player) => player.team))];
+  const yourTeamKey = targetTeam ?? teamKeys[0];
+  const enemyTeamKey = teamKeys.find((team) => team !== yourTeamKey);
 
-  return Array.from(teams.values()).sort(
-    (left, right) => Number(Boolean(right[0]?.won)) - Number(Boolean(left[0]?.won)),
-  );
+  return {
+    yourTeam: players.filter((player) => player.team === yourTeamKey).sort(sortPlayers),
+    enemyTeam: players.filter((player) => player.team === enemyTeamKey).sort(sortPlayers)
+  };
 };
 
-const formatTeam = (players: DetailPlayer[], team: "Team A" | "Team B") => {
+const formatTeam = (players: DetailPlayer[], matchMvpAcs: number) => {
   if (!players.length) return "No player data available.";
-  const bullet = team === "Team A" ? "▸" : "▹";
+  const teamMvpAcs = Math.max(...players.map((player) => player.acs));
 
-  const rows = players
+  return players
     .map((player) => {
-      const riotId = player.tag ? `${player.name}#${player.tag}` : player.name;
-      return `${bullet} **${riotId}** - ${player.agent}\n\`ACS ${player.acs}\`  \`KDA ${player.kills}/${player.deaths}/${player.assists}\``;
+      const emoji = getRankEmoji(player.tier);
+      const mvpEmoji = player.acs === matchMvpAcs ? `${fubaEmojis.matchMvp} ` : player.acs === teamMvpAcs ? `${fubaEmojis.teamMvp} ` : "";
+      return `${mvpEmoji}**${player.riotId} - ${getAgentEmoji(player.agent)} ${player.agent}**\n${emoji} ${player.acs} - ${player.kills}/${player.deaths}/${player.assists}`;
     })
-    .join("\n\n");
-
-  return rows.slice(0, 1024);
+    .join("\n\n")
+    .slice(0, 1024);
 };
 
-const teamHeader = (team: "Team A" | "Team B", players: DetailPlayer[]) => {
-  const emoji = team === "Team A" ? "🛡️" : "⚔️";
-  const totalKills = players.reduce((total, player) => total + player.kills, 0);
-  const won = players.some((player) => player.won);
-  return `${emoji} ${team}${won ? " • WIN" : ""} • ${totalKills} kills`;
+const buildTimeline = (match: MatchDocument, targetTeam?: string) => {
+  const raw = getRecord(match.raw);
+  const rounds = Array.isArray(raw?.rounds) ? raw.rounds : [];
+  if (!rounds.length || !targetTeam) return "";
+
+  return rounds
+    .map((round) => {
+      const record = getRecord(round);
+      const winner =
+        readString(record?.winning_team) ??
+        readString(record?.winningTeam) ??
+        readString(record?.winner) ??
+        readString(record?.team) ??
+        readString(getRecord(record?.result)?.winning_team);
+
+      if (!winner) return fubaEmojis.roundUnknown;
+      return winner.toLowerCase() === targetTeam.toLowerCase() ? fubaEmojis.roundWin : fubaEmojis.roundLoss;
+    })
+    .join("");
 };
 
 const readTeamWon = (match: MatchDocument, team?: string) => {
-  const raw = match.raw as { teams?: unknown } | undefined;
-  const teams = Array.isArray(raw?.teams) ? raw.teams : [];
-  const found = teams.find(
-    (item) =>
-      item &&
-      typeof item === "object" &&
-      readString((item as Record<string, unknown>).team_id)?.toLowerCase() === team?.toLowerCase(),
-  );
-  return found && typeof found === "object" ? Boolean((found as Record<string, unknown>).won) : undefined;
+  const raw = getRecord(match.raw);
+  const rawTeams = Array.isArray(raw?.teams)
+    ? raw.teams
+    : raw?.teams && typeof raw.teams === "object"
+      ? Object.values(raw.teams as Record<string, unknown>)
+      : [];
+
+  const found = rawTeams.find((item) => {
+    const record = getRecord(item);
+    const teamId = readString(record?.team_id) ?? readString(record?.teamId) ?? readString(record?.team);
+    return teamId?.toLowerCase() === team?.toLowerCase();
+  });
+
+  const record = getRecord(found);
+  const won = record?.won ?? record?.has_won;
+  return typeof won === "boolean" ? won : undefined;
+};
+
+const formatScore = (match: MatchDocument) => {
+  if (match.teamScore === undefined || match.enemyScore === undefined) return "N/A";
+  return `${match.teamScore}:${match.enemyScore}`;
 };
 
 const inferRoundsFromTeams = (match: MatchDocument) =>
   match.teamScore !== undefined && match.enemyScore !== undefined ? match.teamScore + match.enemyScore : 0;
 
+const sortPlayers = (left: DetailPlayer, right: DetailPlayer) => right.acs - left.acs;
 const getRecord = (value: unknown) => (value && typeof value === "object" ? (value as Record<string, unknown>) : undefined);
 const readString = (value: unknown) => (typeof value === "string" ? value : undefined);
 const readNumber = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+const readOptionalNumber = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
