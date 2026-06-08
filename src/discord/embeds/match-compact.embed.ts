@@ -2,6 +2,7 @@ import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
 import { getAgentEmoji } from "../emojis";
+import { formatFblScoreLine } from "./fbl-score.helpers";
 import { formatRankLine, formatSpecialEventNote, getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
 import { getMatchMvpLabel } from "./mvp.helpers";
 
@@ -26,6 +27,7 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
     .setDescription(
       [
         stats.mapAndMode,
+        formatFblScoreLine(match),
         mvpLabel,
         `**${agentLabel}** • KDA **${stats.kda}** • K/D **${stats.kd}** • ACS **${acs}**`,
         rankLine,

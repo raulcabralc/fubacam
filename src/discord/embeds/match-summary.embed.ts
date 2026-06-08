@@ -2,6 +2,7 @@ import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
 import { fubaEmojis, getAgentEmoji } from "../emojis";
+import { formatFblScoreLine } from "./fbl-score.helpers";
 import { formatRankLine, formatSpecialEventNote, getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
 import { getMatchMvpLabel } from "./mvp.helpers";
 
@@ -19,16 +20,17 @@ export const buildMatchSummaryEmbed = (
   const userLabel = options?.matchUser ? ` (${options.matchUser.username})` : "";
   const rankLine = formatRankLine(match);
   const mvpLabel = getMatchMvpLabel(match);
+  const titleScore = stats.score === "N/A" ? "" : stats.score.replace("-", " - ");
 
   const embed = new EmbedBuilder()
     .setAuthor({
       name: `${playerName}${userLabel}`,
       iconURL: options?.matchUser?.displayAvatarURL() ?? agent?.imageUrl ?? options?.requestedBy?.client.user?.displayAvatarURL(),
     })
-    .setTitle(`${stats.resultIcon} ${stats.result} ${formatTitleScore(stats.score)} ${match.map ? `on ${match.map}` : ""}`.trim())
+    .setTitle(`${stats.resultIcon} ${stats.result} ${titleScore} ${match.map ? `on ${match.map}` : ""} ${mvpLabel ?? ""}`.trim())
     .setColor(match.won ? 0x2ecc71 : 0xe74c3c)
     .setDescription(
-      [mvpLabel, stats.mapAndMode, rankLine, getTrackerLink(match.providerMatchId)]
+      [formatFblScoreLine(match), stats.mapAndMode, rankLine, getTrackerLink(match.providerMatchId)]
         .filter(Boolean)
         .join("\n"),
     )
@@ -59,5 +61,3 @@ export const buildMatchSummaryEmbed = (
 
   return embed;
 };
-
-const formatTitleScore = (score: string) => (score === "N/A" ? "" : score.replace("-", " - "));

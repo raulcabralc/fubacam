@@ -121,3 +121,5 @@ export const getAgentEmoji = (agent?: string) => {
   if (!agent) return fubaEmojis.agent;
   return valorantAgentEmojis[agent.trim().toLowerCase()] ?? fubaEmojis.agent;
 };
+
+export const fblScoreEmoji = "<:FBL_Score:1513646191823556812>";
