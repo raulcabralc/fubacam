@@ -1,7 +1,7 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
-import { fubaEmojis, getAgentEmoji } from "../emojis";
+import { getAgentEmoji } from "../emojis";
 import { formatRankLine, formatSpecialEventNote, getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
 import { getMatchMvpLabel } from "./mvp.helpers";
 
@@ -27,7 +27,7 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
       [
         stats.mapAndMode,
         mvpLabel,
-        `**${agentLabel}** • KDA **${stats.kda}** • K/D **${stats.kd}** • ${fubaEmojis.acs} ACS **${acs}**`,
+        `**${agentLabel}** • KDA **${stats.kda}** • K/D **${stats.kd}** • ACS **${acs}**`,
         rankLine,
         getTrackerLink(match.providerMatchId),
       ]
@@ -38,7 +38,7 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
 
   if (stats.specialEvents.length) {
     embed.addFields({
-      name: `${fubaEmojis.specialEvents} Special Events`,
+      name: "Special Events",
       value: formatSpecialEventNote(stats.specialEvents),
       inline: false,
     });

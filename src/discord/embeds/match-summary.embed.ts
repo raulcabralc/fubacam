@@ -1,7 +1,7 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
-import { fubaEmojis, getAgentEmoji } from "../emojis";
+import { getAgentEmoji } from "../emojis";
 import { formatRankLine, formatSpecialEventNote, getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
 import { getMatchMvpLabel } from "./mvp.helpers";
 
@@ -34,21 +34,21 @@ export const buildMatchSummaryEmbed = (
         .join("\n"),
     )
     .addFields(
-      { name: `${fubaEmojis.agent} Agent`, value: agentLabel, inline: true },
-      { name: `${fubaEmojis.duration} Duration`, value: stats.duration, inline: true },
+      { name: "Agent", value: agentLabel, inline: true },
+      { name: "Duration", value: stats.duration, inline: true },
       { name: "\u200B", value: "\u200B", inline: true },
-      { name: `${fubaEmojis.kda} K / D / A`, value: stats.kda, inline: true },
-      { name: `${fubaEmojis.kd} K/D`, value: stats.kd, inline: true },
-      { name: `${fubaEmojis.acs} ACS`, value: String(match.combatScore ?? "N/A"), inline: true },
-      { name: `${fubaEmojis.firstBlood} First Bloods`, value: `**${stats.firstBloods}**`, inline: true },
-      { name: `${fubaEmojis.firstDeath} First Deaths`, value: `**${stats.firstDeaths}**`, inline: true },
-      { name: `${fubaEmojis.headshot} HS%`, value: `**${stats.headshotPercent}%**`, inline: true },
+      { name: "K / D / A", value: stats.kda, inline: true },
+      { name: "K/D", value: stats.kd, inline: true },
+      { name: "ACS", value: String(match.combatScore ?? "N/A"), inline: true },
+      { name: "First Bloods", value: `**${stats.firstBloods}**`, inline: true },
+      { name: "First Deaths", value: `**${stats.firstDeaths}**`, inline: true },
+      { name: "HS%", value: `**${stats.headshotPercent}%**`, inline: true },
     )
     .setTimestamp(match.startedAt);
 
   if (stats.specialEvents.length) {
     embed.addFields({
-      name: `${fubaEmojis.specialEvents} Special Events`,
+      name: "Special Events",
       value: formatSpecialEventNote(stats.specialEvents),
       inline: false,
     });

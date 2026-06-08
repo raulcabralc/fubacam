@@ -82,7 +82,7 @@ export const formatRankLine = (match: MatchDocument) => {
   if (!match.rank && match.rr === undefined && match.rrChange === undefined) return undefined;
 
   const rank = match.rank ?? "Rank unknown";
-  const rankEmoji = match.rankTierId !== undefined ? getRankEmoji(match.rankTierId) : getRankEmojiByName(match.rank);
+  const rankEmoji = match.rank ? getRankEmojiByName(match.rank) : getRankEmoji(match.rankTierId);
   const rr = match.rr === undefined ? "" : ` • **${match.rr} RR**`;
   const rrChange = match.rrChange === undefined ? "" : ` (${match.rrChange >= 0 ? "+" : ""}${match.rrChange})`;
   return `${rankEmoji} **${rank}**${rr}${rrChange}`;

@@ -18,12 +18,14 @@ export const matchDetailsCommand: BotCommand = {
   async execute(interaction, context) {
     if (!interaction.guildId) throw new Error("This command can only be used in a server.");
 
+    await interaction.deferReply();
+
     const index = interaction.options.getInteger("index") ?? 1;
     const user = interaction.options.getUser("user") ?? interaction.user;
     const match = await context.matchService.matchByIndex(interaction.guildId, user.id, index);
 
     if (!match) {
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [
           buildCommandFeedbackEmbed({
             title: "Match Not Found",
@@ -36,6 +38,6 @@ export const matchDetailsCommand: BotCommand = {
       return;
     }
 
-    await interaction.reply({ embeds: [buildMatchDetailsEmbed(match, interaction.user)] });
+    await interaction.editReply({ embeds: [buildMatchDetailsEmbed(match, interaction.user)] });
   },
 };
