@@ -12,26 +12,44 @@ export const getFblScore = (match: MatchDocument) => {
   const hsPercent = match.headshotPercent ?? 0;
   const rounds = (match.roundsPlayed ?? ((match.teamScore ?? 0) + (match.enemyScore ?? 0))) || 1;
   const kd = deaths > 0 ? kills / deaths : kills;
-  const kda = deaths > 0 ? (kills + assists * 0.65) / deaths : kills + assists * 0.65;
+  const kda = deaths > 0 ? (kills + assists * 0.5) / deaths : kills + assists * 0.5;
   const openingDuelDiff = firstBloods - firstDeaths;
   const mvpLabel = getMatchMvpLabel(match);
 
-  const acsScore = clamp((acs / 320) * 360, 0, 420);
-  const kdScore = clamp((kd / 1.6) * 220, 0, 260);
-  const kdaScore = clamp((kda / 2.1) * 130, 0, 160);
-  const resultScore = match.won ? 90 : 35;
-  const headshotScore = clamp((hsPercent / 35) * 70, 0, 90);
-  const openingScore = clamp(openingDuelDiff * 18, -80, 90);
-  const volumeScore = clamp((kills / rounds) * 90, 0, 90);
-  const mvpBonus = mvpLabel ? (mvpLabel === fubaEmojis.matchMvp ? 70 : 40) : 0;
-  const deathPenalty = clamp((deaths / rounds - 0.7) * 120, 0, 90);
+  const acsScore = clamp((acs / 300) * 420, 0, 440);
+  const kdScore = clamp(((kd - 0.45) / 1.15) * 220, 0, 240);
+  const kdaScore = clamp(((kda - 0.8) / 1.7) * 130, 0, 140);
+  const resultScore = match.won ? 45 : 15;
+  const headshotScore = clamp((hsPercent / 40) * 50, 0, 65);
+  const openingScore = clamp(openingDuelDiff * 12, -70, 70);
+  const volumeScore = clamp((kills / rounds) * 60, 0, 70);
+  const mvpBonus = mvpLabel ? (mvpLabel === fubaEmojis.matchMvp ? 60 : 35) : 0;
+  const lowAcsPenalty = acs < 120 ? (120 - acs) * 1.2 : 0;
+  const badKdPenalty = kd < 0.75 ? (0.75 - kd) * 160 : 0;
+  const deathRatePenalty = clamp((deaths / rounds - 0.72) * 140, 0, 90);
 
-  return Math.round(clamp(acsScore + kdScore + kdaScore + resultScore + headshotScore + openingScore + volumeScore + mvpBonus - deathPenalty, 0, 1000));
+  return Math.round(
+    clamp(
+      acsScore +
+        kdScore +
+        kdaScore +
+        resultScore +
+        headshotScore +
+        openingScore +
+        volumeScore +
+        mvpBonus -
+        lowAcsPenalty -
+        badKdPenalty -
+        deathRatePenalty,
+      0,
+      1000,
+    ),
+  );
 };
 
 export const formatFblScoreLine = (match: MatchDocument) => {
   const score = getFblScore(match);
-  return `${fblScoreEmoji} **${getFblScoreGrade(score)}** - **${score}**`;
+  return `${fblScoreEmoji} **${getFblScoreGrade(score)}**  -  **${score}** FBS`;
 };
 
 const getFblScoreGrade = (score: number) => {
