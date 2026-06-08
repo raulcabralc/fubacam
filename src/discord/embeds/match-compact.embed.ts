@@ -21,7 +21,7 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
       name: `${playerName}${userLabel}`,
       iconURL: options?.matchUser?.displayAvatarURL() ?? agent?.imageUrl,
     })
-    .setTitle(`${stats.resultIcon} ${stats.result}${stats.score !== "N/A" ? ` ${stats.score}` : ""}`)
+    .setTitle(`${stats.resultIcon} ${stats.result}${stats.score !== "N/A" ? ` ${stats.score.replace("-", " - ")}` : ""}`)
     .setColor(match.won ? 0x2ecc71 : 0xe74c3c)
     .setDescription(
       [

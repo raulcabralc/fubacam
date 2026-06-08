@@ -19,7 +19,7 @@ export const fubaEmojis = {
   teamMvp: "<:SilverMvp:1513597562085445854>",
   rankDefault: "<:Unranked:1513579627052929104>",
   roundWin: "<:Green:1513602281201729556>",
-  roundLoss: "<:Red:1513602297639473283> ",
+  roundLoss: "<:Red:1513602297639473283>",
   roundUnknown: "<:Grey:1513602899970752662>",
 };
 

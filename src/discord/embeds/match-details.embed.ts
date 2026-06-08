@@ -67,8 +67,8 @@ const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
 
       const riotId = tag ? `${name}#${tag}` : name;
       const isTarget = riotId.toLowerCase() === `${match.riotName}#${match.tagLine}`.toLowerCase();
-      const tier = readPlayerTier(player) ?? (isTarget ? match.rankTierId : undefined);
       const rank = readPlayerRank(player) ?? (isTarget ? match.rank : undefined);
+      const tier = rank ? undefined : readPlayerTier(player);
 
       return {
         riotId,
@@ -103,7 +103,7 @@ const formatTeam = (players: DetailPlayer[], matchMvpAcs: number) => {
 
   return players
     .map((player) => {
-      const emoji = player.tier !== undefined ? getRankEmoji(player.tier) : getRankEmojiByName(player.rank);
+      const emoji = player.rank ? getRankEmojiByName(player.rank) : getRankEmoji(player.tier);
       const mvpEmoji = player.acs === matchMvpAcs ? `${fubaEmojis.matchMvp} ` : player.acs === teamMvpAcs ? `${fubaEmojis.teamMvp} ` : "";
       return `${mvpEmoji}**${player.riotId} - ${getAgentEmoji(player.agent)} ${player.agent}**\n${emoji} ${player.acs} - ${player.kills}/${player.deaths}/${player.assists}`;
     })

@@ -16,10 +16,10 @@ export const getMatchMvpLabel = (match: MatchDocument) => {
   if (!target) return undefined;
 
   const matchMvpAcs = Math.max(...players.map((player) => player.acs));
-  if (target.acs === matchMvpAcs) return `${fubaEmojis.matchMvp} Match MVP`;
+  if (target.acs === matchMvpAcs) return fubaEmojis.matchMvp;
 
   const teamMvpAcs = Math.max(...players.filter((player) => player.team === target.team).map((player) => player.acs));
-  if (target.acs === teamMvpAcs) return `${fubaEmojis.teamMvp} Team MVP`;
+  if (target.acs === teamMvpAcs) return fubaEmojis.teamMvp;
 
   return undefined;
 };

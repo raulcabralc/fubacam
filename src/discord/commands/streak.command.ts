@@ -13,21 +13,6 @@ export const streakCommand: BotCommand = {
     await interaction.deferReply();
 
     const user = interaction.options.getUser("user") ?? interaction.user;
-    const playerDocument = await context.playerService.findByDiscordUser(interaction.guildId, user.id);
-
-    if (playerDocument) {
-      const player = context.playerService.toRegisteredPlayer(playerDocument);
-
-      if (context.provider.getName() === "henrik") {
-        await context.matchService.deleteMalformedProviderMatches(interaction.guildId, user.id, "henrik");
-      }
-
-      const providerMatches = await context.provider.getRecentMatches(player);
-      for (const providerMatch of providerMatches) {
-        await context.matchService.saveIfNew(interaction.guildId, player, providerMatch);
-      }
-    }
-
     const matches = await context.matchService.recentMatches(interaction.guildId, user.id, 10);
     const decidedMatches = matches.filter((match) => match.won !== undefined);
 
