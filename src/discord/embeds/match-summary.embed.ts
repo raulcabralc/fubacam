@@ -1,8 +1,8 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
-import { fubaEmojis, getAgentEmoji } from "../emojis";
-import { formatFblScoreLine } from "./fbl-score.helpers";
+import { fblScoreEmoji, fubaEmojis, getAgentEmoji } from "../emojis";
+import { getFblScore, getFblScoreGrade } from "./fbl-score.helpers";
 import { formatRankLine, formatSpecialEventNote, getMatchDisplayStats, getTrackerLink } from "./match-embed.helpers";
 import { getMatchMvpLabel } from "./mvp.helpers";
 
@@ -20,6 +20,7 @@ export const buildMatchSummaryEmbed = (
   const userLabel = options?.matchUser ? ` (${options.matchUser.username})` : "";
   const rankLine = formatRankLine(match);
   const mvpLabel = getMatchMvpLabel(match);
+  const fblScore = getFblScore(match);
   const titleScore = stats.score === "N/A" ? "" : stats.score.replace("-", " - ");
 
   const embed = new EmbedBuilder()
@@ -30,7 +31,7 @@ export const buildMatchSummaryEmbed = (
     .setTitle(`${stats.resultIcon} ${stats.result} ${titleScore} ${match.map ? `on ${match.map}` : ""} ${mvpLabel ?? ""}`.trim())
     .setColor(match.won ? 0x2ecc71 : 0xe74c3c)
     .setDescription(
-      [formatFblScoreLine(match), stats.mapAndMode, rankLine, getTrackerLink(match.providerMatchId)]
+      [stats.mapAndMode, rankLine, getTrackerLink(match.providerMatchId)]
         .filter(Boolean)
         .join("\n"),
     )
@@ -44,6 +45,7 @@ export const buildMatchSummaryEmbed = (
       { name: "First Blood", value: String(stats.firstBloods), inline: true },
       { name: "First Death", value: String(stats.firstDeaths), inline: true },
       { name: "\u200B", value: "\u200B", inline: true },
+      { name: `${fblScoreEmoji} FBL Score`, value: `**${getFblScoreGrade(fblScore)}** - **${fblScore}**`, inline: true },
     )
     .setTimestamp(match.startedAt);
 

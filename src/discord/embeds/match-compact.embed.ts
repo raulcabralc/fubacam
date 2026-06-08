@@ -27,10 +27,10 @@ export const buildCompactMatchSummaryEmbed = (match: MatchDocument, options?: { 
     .setDescription(
       [
         stats.mapAndMode,
-        formatFblScoreLine(match),
         mvpLabel,
         `**${agentLabel}** • KDA **${stats.kda}** • K/D **${stats.kd}** • ACS **${acs}**`,
         rankLine,
+        formatFblScoreLine(match),
         getTrackerLink(match.providerMatchId),
       ]
         .filter(Boolean)
