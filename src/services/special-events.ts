@@ -70,7 +70,8 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     name: "Br0s Performance",
     emoji: "👬",
     description: "Have at least -10 K/D.",
-    matches: (stats) => stats.kills - stats.deaths <= -10,
+    matches: (stats) =>
+      stats.kills - stats.deaths <= -10 && stats.kills - stats.deaths > -15,
   },
   {
     key: "prime-bros",
