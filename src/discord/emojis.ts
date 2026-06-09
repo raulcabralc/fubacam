@@ -111,6 +111,7 @@ export const valorantAgentEmojis: Record<string, string> = {
   sage: "<:agent_sage:1513611200557224126>",
   skye: "<:agent_skye:1513610977839546379>",
   sova: "<:agent_sova:1513610472358936577>",
+  tejo: "<:agent_tejo:1513677375865487473>",
   viper: "<:agent_viper:1513610800676212756>",
   vyse: "<:agent_vyse:1513620070356619304>",
   waylay: "<:agent_waylay:1513620098022375704>",
@@ -123,3 +124,12 @@ export const getAgentEmoji = (agent?: string) => {
 };
 
 export const fblScoreEmoji = "<:FBL_Score:1513646191823556812>";
+
+export const fblScoreGradeEmojis: Record<string, string> = {
+  S: "<:FBS_Crystal:1513696911608250539>",
+  A: "<:FBS_Gold:1513696932055351346>",
+  B: "<:FBS_Silver:1513696953307758672>",
+  C: "<:FBS_Bronze:1513696974820479097>",
+  D: "<:FBS_Dark:1513696993745305640>",
+  "Br0s & Ana": "<:FBS_Shit:1513697010329321613>"
+};

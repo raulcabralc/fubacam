@@ -1,5 +1,5 @@
 import { MatchDocument } from "../../database/models/Match.model";
-import { fblScoreEmoji, fubaEmojis } from "../emojis";
+import { fblScoreEmoji, fblScoreGradeEmojis, fubaEmojis } from "../emojis";
 import { getMatchMvpLabel } from "./mvp.helpers";
 
 export type FblScoreStats = {
@@ -79,12 +79,13 @@ export const getFblScoreFromStats = (stats: FblScoreStats) => {
   );
 };
 
-export const formatFblScoreLine = (match: MatchDocument) => {
-  const score = getFblScore(match);
-  return `${fblScoreEmoji} **${getFblScoreGrade(score)}**  -  **${score}** FBS`;
-};
+export const formatFblScoreLine = (match: MatchDocument) => formatInlineFblScore(getFblScore(match), true);
 
-export const formatInlineFblScore = (score: number) => `${fblScoreEmoji} **${getFblScoreGrade(score)}** - **${score}**`;
+export const formatInlineFblScore = (score: number, withUnit = false) => {
+  const grade = getFblScoreGrade(score);
+  const emoji = fblScoreGradeEmojis[grade] ?? fblScoreEmoji;
+  return `${emoji} **${grade}**  -  **${score}**${withUnit ? " FBS" : ""}`;
+};
 
 export const getFblScoreGrade = (score: number) => {
   if (score >= 800) return "S";

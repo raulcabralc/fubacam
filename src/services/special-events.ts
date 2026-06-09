@@ -116,14 +116,14 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     name: "Fubá Try So Hard",
     emoji: "🥀",
     description: "Great ACS. Someone made some mistakes...",
-    matches: (stats) => stats.acs >= 240 && !stats.won,
+    matches: (stats) => stats.acs >= 280 && !stats.won,
   },
   {
     key: "great-kd",
     name: "Carry",
     emoji: "🎒",
     description: "Great ACS.",
-    matches: (stats) => stats.acs >= 240 && stats.won === true,
+    matches: (stats) => stats.acs >= 280 && stats.won === true,
   },
   {
     key: "foca-hs",
