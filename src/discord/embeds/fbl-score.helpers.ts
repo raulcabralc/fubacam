@@ -30,7 +30,7 @@ export const getFblScore = (match: MatchDocument) =>
     roundsPlayed: match.roundsPlayed,
     teamScore: match.teamScore,
     enemyScore: match.enemyScore,
-    mvpType: getMvpType(match)
+    mvpType: getMvpType(match),
   });
 
 export const getFblScoreFromStats = (stats: FblScoreStats) => {
@@ -41,9 +41,12 @@ export const getFblScoreFromStats = (stats: FblScoreStats) => {
   const firstBloods = stats.firstBloods ?? 0;
   const firstDeaths = stats.firstDeaths ?? 0;
   const hsPercent = stats.headshotPercent ?? 0;
-  const rounds = (stats.roundsPlayed ?? ((stats.teamScore ?? 0) + (stats.enemyScore ?? 0))) || 1;
+  const rounds =
+    (stats.roundsPlayed ?? (stats.teamScore ?? 0) + (stats.enemyScore ?? 0)) ||
+    1;
   const kd = deaths > 0 ? kills / deaths : kills;
-  const kda = deaths > 0 ? (kills + assists * 0.5) / deaths : kills + assists * 0.5;
+  const kda =
+    deaths > 0 ? (kills + assists * 0.5) / deaths : kills + assists * 0.5;
   const openingDuelDiff = firstBloods - firstDeaths;
 
   const acsScore = clamp((acs / 300) * 420, 0, 440);
@@ -53,8 +56,12 @@ export const getFblScoreFromStats = (stats: FblScoreStats) => {
   const headshotScore = clamp((hsPercent / 40) * 50, 0, 65);
   const openingScore = clamp(openingDuelDiff * 12, -70, 70);
   const volumeScore = clamp((kills / rounds) * 60, 0, 70);
-  const mvpBonus = stats.mvpType === "match" ? 60 : stats.mvpType === "team" ? 35 : 0;
-  const carryLossBonus = !stats.won && acs >= 230 && kd >= 1.05 ? clamp((acs - 230) * 0.35 + (kd - 1.05) * 70, 0, 55) : 0;
+  const mvpBonus =
+    stats.mvpType === "match" ? 60 : stats.mvpType === "team" ? 35 : 0;
+  const carryLossBonus =
+    !stats.won && acs >= 230 && kd >= 1.05
+      ? clamp((acs - 230) * 0.35 + (kd - 1.05) * 70, 0, 55)
+      : 0;
   const lowAcsPenalty = acs < 120 ? (120 - acs) * 1.2 : 0;
   const badKdPenalty = kd < 0.75 ? (0.75 - kd) * 160 : 0;
   const deathRatePenalty = clamp((deaths / rounds - 0.72) * 140, 0, 90);
@@ -79,12 +86,13 @@ export const getFblScoreFromStats = (stats: FblScoreStats) => {
   );
 };
 
-export const formatFblScoreLine = (match: MatchDocument) => formatInlineFblScore(getFblScore(match), true);
+export const formatFblScoreLine = (match: MatchDocument) =>
+  formatInlineFblScore(getFblScore(match), true);
 
 export const formatInlineFblScore = (score: number, withUnit = false) => {
   const grade = getFblScoreGrade(score);
   const emoji = fblScoreGradeEmojis[grade] ?? fblScoreEmoji;
-  return `${emoji} **${grade}**  -  **${score}**${withUnit ? " FBS" : ""}`;
+  return `${emoji} **${grade}**  •  **${score}**${withUnit ? " FBS" : ""}`;
 };
 
 export const getFblScoreGrade = (score: number) => {
@@ -103,4 +111,5 @@ const getMvpType = (match: MatchDocument) => {
   return undefined;
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);

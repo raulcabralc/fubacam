@@ -1,8 +1,8 @@
 import { EmbedBuilder, User } from "discord.js";
 import { MatchDocument } from "../../database/models/Match.model";
 import { resolveValorantAgentAsset } from "../../utils/valorant-assets";
-import { fblScoreEmoji, fubaEmojis, getAgentEmoji } from "../emojis";
-import { getFblScore, getFblScoreGrade } from "./fbl-score.helpers";
+import { fubaEmojis, getAgentEmoji } from "../emojis";
+import { formatInlineFblScore, getFblScore } from "./fbl-score.helpers";
 import {
   formatRankLine,
   formatSpecialEventNote,
@@ -27,9 +27,9 @@ export const buildMatchSummaryEmbed = (
     : "";
   const rankLine = formatRankLine(match);
   const mvpLabel = getMatchMvpLabel(match);
-  const fblScore = getFblScore(match);
   const titleScore =
     stats.score === "N/A" ? "" : stats.score.replace("-", " - ");
+  const fblScore = getFblScore(match);
 
   const embed = new EmbedBuilder()
     .setAuthor({
@@ -69,12 +69,12 @@ export const buildMatchSummaryEmbed = (
       { name: "HS%", value: `${stats.headshotPercent}%`, inline: true },
       { name: "First Blood", value: String(stats.firstBloods), inline: true },
       { name: "First Death", value: String(stats.firstDeaths), inline: true },
+      { name: "\u200B", value: "\u200B", inline: true },
       {
-        name: `${fblScoreEmoji} FBL Score`,
-        value: `**${getFblScoreGrade(fblScore)}** - **${fblScore}**`,
+        name: "FBL Score",
+        value: formatInlineFblScore(fblScore),
         inline: true,
       },
-      { name: "\u200B", value: "\u200B", inline: true },
     )
     .setTimestamp(match.startedAt);
 

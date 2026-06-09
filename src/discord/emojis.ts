@@ -120,7 +120,9 @@ export const valorantAgentEmojis: Record<string, string> = {
 
 export const getAgentEmoji = (agent?: string) => {
   if (!agent) return fubaEmojis.agent;
-  return valorantAgentEmojis[agent.trim().toLowerCase()] ?? fubaEmojis.agent;
+  const key = agent.trim().toLowerCase();
+  const normalizedKey = key.replace(/[^a-z0-9]/g, "");
+  return valorantAgentEmojis[key] ?? valorantAgentEmojis[normalizedKey] ?? fubaEmojis.agent;
 };
 
 export const fblScoreEmoji = "<:FBL_Score:1513646191823556812>";
@@ -131,5 +133,5 @@ export const fblScoreGradeEmojis: Record<string, string> = {
   B: "<:FBS_Silver:1513696953307758672>",
   C: "<:FBS_Bronze:1513696974820479097>",
   D: "<:FBS_Dark:1513696993745305640>",
-  "Br0s & Ana": "<:FBS_Shit:1513697010329321613>"
+  "Br0s & Ana": "<:FBS_Shit:1513697010329321613>",
 };
