@@ -166,6 +166,13 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     description: "A lot of rounds without a single kill.",
     matches: (stats) => stats.maxKilllessRoundStreak >= 10,
   },
+  {
+    key: "ace",
+    name: "Ace",
+    emoji: "🃏",
+    description: "Got 5+ kills in a round.",
+    matches: (stats) => stats.aces === 1,
+  },
 ];
 
 export const getMatchSpecialEvents = (stats: MatchSpecialEventStats) =>
