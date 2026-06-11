@@ -75,7 +75,12 @@ export const getMatchDisplayStats = (match: MatchDocument) => {
 
 export const formatSpecialEventNote = (events: ReturnType<typeof getMatchSpecialEvents>) => {
   if (!events.length) return "";
-  return events.map((event) => `${event.emoji} **${event.name}**\n${event.description}`).join("\n\n");
+  return events
+    .map((event) => {
+      const detail = event.detail ? ` (${event.detail})` : "";
+      return `${event.emoji} **${event.name}**\n${event.description}${detail}`;
+    })
+    .join("\n\n");
 };
 
 export const formatRankLine = (match: MatchDocument) => {

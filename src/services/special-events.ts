@@ -41,6 +41,7 @@ export type MatchSpecialEvent = {
   emoji: string;
   description: string;
   matches(stats: MatchSpecialEventStats): boolean;
+  getDetail?(stats: MatchSpecialEventStats): string | undefined;
 };
 
 export const matchSpecialEvents: MatchSpecialEvent[] = [
@@ -50,6 +51,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "⚰️",
     description: "Lots of first deaths!",
     matches: (stats) => stats.firstBloods - stats.firstDeaths <= -3,
+    getDetail: (stats) => `${stats.firstBloods - stats.firstDeaths} FB/FD`,
   },
   {
     key: "foca-dd",
@@ -57,6 +59,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "👯",
     description: "Only 2 digits of ACS!",
     matches: (stats) => stats.acs < 100,
+    getDetail: (stats) => `${stats.acs} ACS`,
   },
   {
     key: "raffaxl",
@@ -72,6 +75,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     description: "Have at least -10 K/D.",
     matches: (stats) =>
       stats.kills - stats.deaths <= -10 && stats.kills - stats.deaths > -15,
+    getDetail: (stats) => `${stats.kills - stats.deaths} K/D diff`,
   },
   {
     key: "prime-bros",
@@ -79,6 +83,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🫂",
     description: "Have at least -15 K/D.",
     matches: (stats) => stats.kills - stats.deaths <= -15,
+    getDetail: (stats) => `${stats.kills - stats.deaths} K/D diff`,
   },
   {
     key: "lz-incident",
@@ -86,6 +91,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🪦",
     description: "Die more than the number of rounds.",
     matches: (stats) => stats.roundsPlayed < stats.deaths,
+    getDetail: (stats) => `${stats.deaths} deaths in ${stats.roundsPlayed} rounds`,
   },
   {
     key: "victim",
@@ -93,6 +99,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "☠️",
     description: "Die all the rounds.",
     matches: (stats) => stats.roundsPlayed === stats.deaths,
+    getDetail: (stats) => `${stats.deaths}/${stats.roundsPlayed} rounds`,
   },
   {
     key: "flavor-victim",
@@ -103,6 +110,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
       stats.roundsPlayed > 0 &&
       stats.deaths < stats.roundsPlayed &&
       stats.roundsPlayed - stats.deaths <= 4,
+    getDetail: (stats) => `${stats.deaths}/${stats.roundsPlayed} rounds`,
   },
   {
     key: "reverse-ivg",
@@ -110,6 +118,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🔪",
     description: "Great First Bloods!",
     matches: (stats) => stats.firstBloods - stats.firstDeaths >= +3,
+    getDetail: (stats) => `+${stats.firstBloods - stats.firstDeaths} FB/FD`,
   },
   {
     key: "fuba",
@@ -117,6 +126,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🥀",
     description: "Great ACS. Someone made some mistakes...",
     matches: (stats) => stats.acs >= 280 && !stats.won,
+    getDetail: (stats) => `${stats.acs} ACS`,
   },
   {
     key: "great-kd",
@@ -124,6 +134,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🎒",
     description: "Great ACS.",
     matches: (stats) => stats.acs >= 280 && stats.won === true,
+    getDetail: (stats) => `${stats.acs} ACS`,
   },
   {
     key: "foca-hs",
@@ -131,6 +142,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🏹",
     description: "Terrible HS%.",
     matches: (stats) => stats.headshotPercent <= 15,
+    getDetail: (stats) => `${stats.headshotPercent}% HS`,
   },
   {
     key: "sacy",
@@ -138,6 +150,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "👨🏻‍🦲",
     description: "A lot of bodyshots!",
     matches: (stats) => stats.bodyshotPercent >= 80,
+    getDetail: (stats) => `${stats.bodyshotPercent}% bodyshots`,
   },
   {
     key: "lz-bait",
@@ -158,6 +171,11 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
         killsPerOpeningDuel >= 5
       );
     },
+    getDetail: (stats) => {
+      const openingDuels = stats.firstBloods + stats.firstDeaths;
+      const kd = stats.deaths > 0 ? stats.kills / stats.deaths : stats.kills;
+      return `${kd.toFixed(2)} K/D, ${openingDuels} opening duels`;
+    },
   },
   {
     key: "lz-dont-bait",
@@ -165,6 +183,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🕒",
     description: "A lot of rounds without a single kill.",
     matches: (stats) => stats.maxKilllessRoundStreak >= 10,
+    getDetail: (stats) => `${stats.maxKilllessRoundStreak} rounds`,
   },
   {
     key: "ace",
@@ -172,11 +191,21 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🃏",
     description: "Got 5+ kills in a round.",
     matches: (stats) => stats.aces === 1,
+    getDetail: (stats) => `${stats.maxKillsInRound} kills in one round`,
   },
 ];
 
-export const getMatchSpecialEvents = (stats: MatchSpecialEventStats) =>
-  matchSpecialEvents.filter((event) => event.matches(stats));
+export type MatchedSpecialEvent = MatchSpecialEvent & {
+  detail?: string;
+};
+
+export const getMatchSpecialEvents = (stats: MatchSpecialEventStats): MatchedSpecialEvent[] =>
+  matchSpecialEvents
+    .filter((event) => event.matches(stats))
+    .map((event) => ({
+      ...event,
+      detail: event.getDetail?.(stats),
+    }));
 
 const getKillDeathRatio = (
   stats: Pick<MatchSpecialEventStats, "kills" | "deaths">,
