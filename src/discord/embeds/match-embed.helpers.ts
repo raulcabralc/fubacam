@@ -56,6 +56,7 @@ export const getMatchDisplayStats = (match: MatchDocument) => {
     aces: match.aces ?? 0,
     maxKillsInRound: match.maxKillsInRound ?? 0,
     maxKilllessRoundStreak: match.maxKilllessRoundStreak ?? 0,
+    clutches1v3Plus: match.clutches1v3Plus ?? 0,
   });
 
   return {

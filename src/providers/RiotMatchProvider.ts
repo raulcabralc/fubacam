@@ -133,7 +133,8 @@ export class RiotMatchProvider implements MatchProvider {
         multiKills: roundStats.multiKills,
         aces: roundStats.aces,
         maxKillsInRound: roundStats.maxKillsInRound,
-        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak
+        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak,
+        clutches1v3Plus: roundStats.clutches1v3Plus
       },
       raw: match
     };
@@ -158,31 +159,38 @@ const deriveRoundStats = (match: RiotMatchPayload, puuid: string) => {
   let maxKillsInRound = 0;
   let currentKilllessRoundStreak = 0;
   let maxKilllessRoundStreak = 0;
+  let clutches1v3Plus = 0;
+  const teamByPuuid = new Map(match.players.map((player) => [player.puuid, player.teamId]));
+  const playerTeamId = teamByPuuid.get(puuid);
 
   for (const round of match.roundResults) {
     if (round.bombPlanter === puuid) plants += 1;
     if (round.bombDefuser === puuid) defuses += 1;
 
-    const firstKill = round.playerStats
+    const allRoundKills = round.playerStats
       .flatMap((roundPlayer) => roundPlayer.kills)
-      .sort((left, right) => left.timeSinceRoundStartMillis - right.timeSinceRoundStartMillis)[0];
+      .sort((left, right) => left.timeSinceRoundStartMillis - right.timeSinceRoundStartMillis);
+    const firstKill = allRoundKills[0];
 
     if (firstKill?.killer === puuid) firstBloods += 1;
     if (firstKill?.victim === puuid) firstDeaths += 1;
+    if (isRiotClutch1v3Plus(allRoundKills, puuid, playerTeamId, round.winningTeam, teamByPuuid)) {
+      clutches1v3Plus += 1;
+    }
 
     const playerRound = round.playerStats.find((item) => item.puuid === puuid);
     if (!playerRound) continue;
 
-    const roundKills = playerRound.kills.length;
-    maxKillsInRound = Math.max(maxKillsInRound, roundKills);
-    if (roundKills === 0) {
+    const playerRoundKills = playerRound.kills.length;
+    maxKillsInRound = Math.max(maxKillsInRound, playerRoundKills);
+    if (playerRoundKills === 0) {
       currentKilllessRoundStreak += 1;
       maxKilllessRoundStreak = Math.max(maxKilllessRoundStreak, currentKilllessRoundStreak);
     } else {
       currentKilllessRoundStreak = 0;
     }
-    if (roundKills >= 2) multiKills += 1;
-    if (roundKills >= 5) aces += 1;
+    if (playerRoundKills >= 2) multiKills += 1;
+    if (playerRoundKills >= 5) aces += 1;
 
     totalLoadoutValue += playerRound.economy.loadoutValue;
     totalSpent += playerRound.economy.spent;
@@ -217,8 +225,32 @@ const deriveRoundStats = (match: RiotMatchPayload, puuid: string) => {
     multiKills,
     aces,
     maxKillsInRound,
-    maxKilllessRoundStreak
+    maxKilllessRoundStreak,
+    clutches1v3Plus
   };
+};
+
+const isRiotClutch1v3Plus = (
+  kills: RiotMatchPayload["roundResults"][number]["playerStats"][number]["kills"],
+  puuid: string,
+  playerTeamId: string | undefined,
+  winningTeam: string,
+  teamByPuuid: Map<string, string>,
+) => {
+  if (!playerTeamId || winningTeam !== playerTeamId) return false;
+
+  const alive = new Set(teamByPuuid.keys());
+  for (const kill of kills) {
+    if (kill.killer === puuid && alive.has(puuid)) {
+      const aliveTeammates = [...alive].filter((alivePuuid) => alivePuuid !== puuid && teamByPuuid.get(alivePuuid) === playerTeamId).length;
+      const aliveEnemies = [...alive].filter((alivePuuid) => teamByPuuid.get(alivePuuid) !== playerTeamId).length;
+      if (aliveTeammates === 0 && aliveEnemies >= 3) return true;
+    }
+
+    alive.delete(kill.victim);
+  }
+
+  return false;
 };
 
 const normalizeRiotAssetId = (value?: string) => {

@@ -72,7 +72,8 @@ export class MockMatchProvider implements MatchProvider {
         multiKills: randomBetween(0, 6),
         aces: Math.random() > 0.94 ? 1 : 0,
         maxKillsInRound: randomBetween(1, 5),
-        maxKilllessRoundStreak: randomBetween(0, 10)
+        maxKilllessRoundStreak: randomBetween(0, 10),
+        clutches1v3Plus: Math.random() > 0.9 ? randomBetween(1, 2) : 0
       },
       raw: { generated: true }
     };

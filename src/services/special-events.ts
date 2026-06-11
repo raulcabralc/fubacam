@@ -33,6 +33,7 @@ export type MatchSpecialEventStats = {
   aces: number;
   maxKillsInRound: number;
   maxKilllessRoundStreak: number;
+  clutches1v3Plus: number;
 };
 
 export type MatchSpecialEvent = {
@@ -91,7 +92,8 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     emoji: "🪦",
     description: "Die more than the number of rounds.",
     matches: (stats) => stats.roundsPlayed < stats.deaths,
-    getDetail: (stats) => `${stats.deaths} deaths in ${stats.roundsPlayed} rounds`,
+    getDetail: (stats) =>
+      `${stats.deaths} deaths in ${stats.roundsPlayed} rounds`,
   },
   {
     key: "victim",
@@ -109,7 +111,7 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     matches: (stats) =>
       stats.roundsPlayed > 0 &&
       stats.deaths < stats.roundsPlayed &&
-      stats.roundsPlayed - stats.deaths <= 4,
+      stats.roundsPlayed - stats.deaths <= 2,
     getDetail: (stats) => `${stats.deaths}/${stats.roundsPlayed} rounds`,
   },
   {
@@ -186,6 +188,15 @@ export const matchSpecialEvents: MatchSpecialEvent[] = [
     getDetail: (stats) => `${stats.maxKilllessRoundStreak} rounds`,
   },
   {
+    key: "clutch-1v3-plus",
+    name: "Clutch",
+    emoji: "💪",
+    description: "Won a 1v3+ clutch.",
+    matches: (stats) => stats.clutches1v3Plus >= 1,
+    getDetail: (stats) =>
+      `${stats.clutches1v3Plus} clutch${stats.clutches1v3Plus === 1 ? "" : "es"} 1v3+`,
+  },
+  {
     key: "ace",
     name: "Ace",
     emoji: "🃏",
@@ -199,7 +210,9 @@ export type MatchedSpecialEvent = MatchSpecialEvent & {
   detail?: string;
 };
 
-export const getMatchSpecialEvents = (stats: MatchSpecialEventStats): MatchedSpecialEvent[] =>
+export const getMatchSpecialEvents = (
+  stats: MatchSpecialEventStats,
+): MatchedSpecialEvent[] =>
   matchSpecialEvents
     .filter((event) => event.matches(stats))
     .map((event) => ({

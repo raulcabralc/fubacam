@@ -154,7 +154,8 @@ export class HenrikMatchProvider implements MatchProvider {
         multiKills: roundStats.multiKills,
         aces: roundStats.aces,
         maxKillsInRound: roundStats.maxKillsInRound,
-        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak
+        maxKilllessRoundStreak: roundStats.maxKilllessRoundStreak,
+        clutches1v3Plus: roundStats.clutches1v3Plus
       },
       raw: match
     };
@@ -241,7 +242,14 @@ const deriveRoundStats = (match: HenrikMatchPayload, player: HenrikPlayerPayload
   let maxKillsInRound = 0;
   let currentKilllessRoundStreak = 0;
   let maxKilllessRoundStreak = 0;
+  let clutches1v3Plus = 0;
   let totalRemaining = 0;
+  const teamByPuuid = new Map(
+    getPlayers(match)
+      .map((item) => [item.puuid, item.team_id ?? item.team] as const)
+      .filter((item): item is readonly [string, string] => Boolean(item[0] && item[1]))
+  );
+  const playerTeamId = player.team_id ?? player.team;
 
   const killsByRound = new Map<number, Record<string, unknown>[]>();
   for (const kill of readArray(match, "kills")) {
@@ -265,10 +273,13 @@ const deriveRoundStats = (match: HenrikMatchPayload, player: HenrikPlayerPayload
         (readNumber(right, "time_in_round_in_ms") || readNumber(right, "time_since_round_start_millis"))
     );
     const firstKill = kills[0];
-    if (readPuuid(firstKill, "killer") === player.puuid || readText(firstKill, "killer_puuid") === player.puuid) firstBloods += 1;
-    if (readPuuid(firstKill, "victim") === player.puuid || readText(firstKill, "victim_puuid") === player.puuid) firstDeaths += 1;
+    if (readKillKillerPuuid(firstKill) === player.puuid) firstBloods += 1;
+    if (readKillVictimPuuid(firstKill) === player.puuid) firstDeaths += 1;
+    if (isHenrikClutch1v3Plus(kills, player.puuid, playerTeamId, readRoundWinningTeam(round), teamByPuuid)) {
+      clutches1v3Plus += 1;
+    }
 
-    const playerRoundKills = kills.filter((kill) => readPuuid(kill, "killer") === player.puuid || readText(kill, "killer_puuid") === player.puuid).length;
+    const playerRoundKills = kills.filter((kill) => readKillKillerPuuid(kill) === player.puuid).length;
     maxKillsInRound = Math.max(maxKillsInRound, playerRoundKills);
     if (playerRoundKills === 0) {
       currentKilllessRoundStreak += 1;
@@ -291,8 +302,33 @@ const deriveRoundStats = (match: HenrikMatchPayload, player: HenrikPlayerPayload
     multiKills,
     aces,
     maxKillsInRound,
-    maxKilllessRoundStreak
+    maxKilllessRoundStreak,
+    clutches1v3Plus
   };
+};
+
+const isHenrikClutch1v3Plus = (
+  kills: Record<string, unknown>[],
+  puuid: string | undefined,
+  playerTeamId: string | undefined,
+  winningTeam: string | undefined,
+  teamByPuuid: Map<string, string>
+) => {
+  if (!puuid || !playerTeamId || !winningTeam || winningTeam.toLowerCase() !== playerTeamId.toLowerCase()) return false;
+
+  const alive = new Set(teamByPuuid.keys());
+  for (const kill of kills) {
+    if (readKillKillerPuuid(kill) === puuid && alive.has(puuid)) {
+      const aliveTeammates = [...alive].filter((alivePuuid) => alivePuuid !== puuid && teamByPuuid.get(alivePuuid)?.toLowerCase() === playerTeamId.toLowerCase()).length;
+      const aliveEnemies = [...alive].filter((alivePuuid) => teamByPuuid.get(alivePuuid)?.toLowerCase() !== playerTeamId.toLowerCase()).length;
+      if (aliveTeammates === 0 && aliveEnemies >= 3) return true;
+    }
+
+    const victim = readKillVictimPuuid(kill);
+    if (victim) alive.delete(victim);
+  }
+
+  return false;
 };
 
 const getRecord = (value: unknown, ...path: string[]): Record<string, unknown> | undefined => {
@@ -323,6 +359,14 @@ const readPuuid = (value: unknown, key: string) => {
   }
   return undefined;
 };
+
+const readKillKillerPuuid = (kill: unknown) => readPuuid(kill, "killer") ?? readText(kill, "killer_puuid");
+const readKillVictimPuuid = (kill: unknown) => readPuuid(kill, "victim") ?? readText(kill, "victim_puuid");
+
+const readRoundWinningTeam = (round: unknown) =>
+  readText(round, "winning_team", "winningTeam", "winning_team_id", "winningTeamId", "team") ??
+  readText(getRecord(round, "winning_team"), "team_id", "teamId", "team", "id", "name") ??
+  readText(getRecord(round, "winner"), "team_id", "teamId", "team", "id", "name");
 
 const readText = (value: unknown, ...keys: string[]) => {
   if (typeof value === "string") return value;

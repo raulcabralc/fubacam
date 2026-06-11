@@ -51,6 +51,7 @@ export type ProviderMatchPlayerStats = {
   aces?: number;
   maxKillsInRound?: number;
   maxKilllessRoundStreak?: number;
+  clutches1v3Plus?: number;
   rank?: string;
   rankTierId?: number;
   rr?: number;

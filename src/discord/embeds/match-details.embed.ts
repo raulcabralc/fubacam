@@ -22,6 +22,8 @@ type DetailPlayer = {
   score: number;
   acs: number;
   headshotPercent: number;
+  firstBloods: number;
+  firstDeaths: number;
   roundsPlayed: number;
   mvpType?: "match" | "team";
   rank?: string;
@@ -89,6 +91,7 @@ const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
     readNumber(getRecord(raw?.metadata)?.rounds_played) ||
     inferRoundsFromTeams(match) ||
     1;
+  const openingStatsByPuuid = extractOpeningStatsByPuuid(raw);
 
   return rawPlayers
     .filter((player): player is Record<string, unknown> =>
@@ -111,9 +114,11 @@ const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
         "Unknown";
 
       const riotId = tag ? `${name}#${tag}` : name;
+      const puuid = readString(player.puuid);
       const isTarget =
         riotId.toLowerCase() ===
         `${match.riotName}#${match.tagLine}`.toLowerCase();
+      const openingStats = puuid ? openingStatsByPuuid.get(puuid) : undefined;
       const rank =
         readPlayerRank(player) ?? (isTarget ? match.rank : undefined);
       const tier = rank ? undefined : readPlayerTier(player);
@@ -130,10 +135,12 @@ const extractPlayers = (match: MatchDocument): DetailPlayer[] => {
         deaths: readNumber(stats?.deaths),
         assists: readNumber(stats?.assists),
         score,
-        acs: Math.round(score / rounds),
+        acs: isTarget ? (match.combatScore ?? Math.round(score / rounds)) : Math.round(score / rounds),
         headshotPercent:
-          totalShots > 0 ? Math.round((headshots / totalShots) * 100) : 0,
-        roundsPlayed: rounds,
+          isTarget ? (match.headshotPercent ?? (totalShots > 0 ? Math.round((headshots / totalShots) * 100) : 0)) : totalShots > 0 ? Math.round((headshots / totalShots) * 100) : 0,
+        firstBloods: isTarget ? (match.firstBloods ?? openingStats?.firstBloods ?? 0) : (openingStats?.firstBloods ?? 0),
+        firstDeaths: isTarget ? (match.firstDeaths ?? openingStats?.firstDeaths ?? 0) : (openingStats?.firstDeaths ?? 0),
+        roundsPlayed: isTarget ? (match.roundsPlayed ?? rounds) : rounds,
         rank,
         tier,
         won: readTeamWon(match, team),
@@ -184,6 +191,8 @@ const formatTeam = (players: DetailPlayer[], matchMvpAcs: number) => {
         acs: player.acs,
         won: player.won,
         headshotPercent: player.headshotPercent,
+        firstBloods: player.firstBloods,
+        firstDeaths: player.firstDeaths,
         roundsPlayed: player.roundsPlayed,
         mvpType,
       });
@@ -215,6 +224,70 @@ const buildTimeline = (match: MatchDocument, targetTeam?: string) => {
         : fubaEmojis.roundLoss;
     })
     .join("");
+};
+
+const extractOpeningStatsByPuuid = (raw?: Record<string, unknown>) => {
+  const stats = new Map<string, { firstBloods: number; firstDeaths: number }>();
+  const add = (puuid: string | undefined, key: "firstBloods" | "firstDeaths") => {
+    if (!puuid) return;
+    const current = stats.get(puuid) ?? { firstBloods: 0, firstDeaths: 0 };
+    current[key] += 1;
+    stats.set(puuid, current);
+  };
+
+  const riotRounds = Array.isArray(raw?.roundResults) ? raw.roundResults : [];
+  for (const round of riotRounds) {
+    const record = getRecord(round);
+    const playerStats = Array.isArray(record?.playerStats)
+      ? record.playerStats
+      : [];
+    const firstKill = playerStats
+      .flatMap((roundPlayer) => {
+        const roundPlayerRecord = getRecord(roundPlayer);
+        return Array.isArray(roundPlayerRecord?.kills)
+          ? roundPlayerRecord.kills
+          : [];
+      })
+      .filter((kill): kill is Record<string, unknown> =>
+        Boolean(kill && typeof kill === "object"),
+      )
+      .sort(
+        (left, right) =>
+          readNumber(left.timeSinceRoundStartMillis) -
+          readNumber(right.timeSinceRoundStartMillis),
+      )[0];
+
+    add(readString(firstKill?.killer), "firstBloods");
+    add(readString(firstKill?.victim), "firstDeaths");
+  }
+
+  const henrikRounds = Array.isArray(raw?.rounds) ? raw.rounds : [];
+  const topLevelKills = readArray(raw, "kills");
+  const killsByRound = new Map<number, Record<string, unknown>[]>();
+  for (const kill of topLevelKills) {
+    const roundNumber = readNumber(kill.round);
+    if (!killsByRound.has(roundNumber)) killsByRound.set(roundNumber, []);
+    killsByRound.get(roundNumber)?.push(kill);
+  }
+
+  for (const round of henrikRounds) {
+    const record = getRecord(round);
+    const roundNumber = readNumber(record?.id) || readNumber(record?.round);
+    const kills = (killsByRound.get(roundNumber) ?? readArray(record, "kills"))
+      .sort(
+        (left, right) =>
+          readNumber(left.time_in_round_in_ms) -
+            readNumber(right.time_in_round_in_ms) ||
+          readNumber(left.time_since_round_start_millis) -
+            readNumber(right.time_since_round_start_millis),
+      );
+    const firstKill = kills[0];
+
+    add(readKillPlayerPuuid(firstKill, "killer", "killer_puuid"), "firstBloods");
+    add(readKillPlayerPuuid(firstKill, "victim", "victim_puuid"), "firstDeaths");
+  }
+
+  return stats;
 };
 
 const readTeamWon = (match: MatchDocument, team?: string) => {
@@ -262,6 +335,25 @@ const readNumber = (value: unknown) =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 const readOptionalNumber = (value: unknown) =>
   typeof value === "number" && Number.isFinite(value) ? value : undefined;
+const readArray = (value: unknown, key: string) => {
+  const candidate = getRecord(value)?.[key];
+  return Array.isArray(candidate)
+    ? candidate.filter((item): item is Record<string, unknown> =>
+        Boolean(item && typeof item === "object"),
+      )
+    : [];
+};
+const readKillPlayerPuuid = (
+  kill: unknown,
+  objectKey: string,
+  fallbackKey: string,
+) => {
+  const record = getRecord(kill);
+  const candidate = record?.[objectKey];
+  if (typeof candidate === "string") return candidate;
+  const nestedPuuid = getRecord(candidate)?.puuid;
+  return readString(nestedPuuid) ?? readString(record?.[fallbackKey]);
+};
 
 const readPlayerTier = (player: Record<string, unknown>) =>
   readOptionalNumber(player.competitive_tier) ??
